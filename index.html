@@ -279,7 +279,6 @@
   .custom-controls {
     display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
   }
-  /* キャリブレーション */
   .calib-box {
     background: rgba(0,0,0,0.3); border-radius: 10px;
     padding: 12px; margin-top: 12px;
@@ -299,7 +298,6 @@
 <div class="container">
   <h1>🥁 ドラムリズム採点</h1>
 
-  <!-- プレイヤー管理 -->
   <div class="card">
     <div class="card-title">👥 プレイヤー選択</div>
     <div class="add-player">
@@ -319,7 +317,6 @@
     </div>
   </div>
 
-  <!-- リズムプリセット -->
   <div class="card">
     <div class="card-title">🎼 リズムプリセット</div>
     <div class="preset-select-wrap">
@@ -380,7 +377,6 @@
     </div>
   </div>
 
-  <!-- 練習設定 -->
   <div class="card">
     <div class="mode-toggle">
       <button class="mode-btn active" data-mode="practice" id="modePractice">🎵 練習モード</button>
@@ -406,7 +402,6 @@
       <button class="btn btn-danger" id="stopBtn" disabled>⏹️ 停止</button>
     </div>
 
-    <!-- キャリブレーション -->
     <div class="calib-box">
       <div class="calib-status">
         🎯 <strong>環境補正(キャリブレーション)</strong>
@@ -625,8 +620,7 @@ let testCompleted = false;
 let players = [];
 let currentPlayerId = null;
 
-// キャリブレーション関連
-let systemLatency = 0; // ミリ秒
+let systemLatency = 0;
 let isCalibrating = false;
 let calibrationSamples = [];
 let calibrationClickTimes = [];
@@ -929,6 +923,11 @@ $('calibrateBtn').addEventListener('click', async () => {
                '⚠️ 測定中は静かに(絶対に叩かないでください)\n\n' +
                '開始しますか?')) return;
   
+  // 🆕 iOS Safari対策:confirm後にAudioContextを再開
+  if (audioContext.state === 'suspended') {
+    try { await audioContext.resume(); } catch(e) { console.warn('resume failed', e); }
+  }
+  
   isCalibrating = true;
   calibrationSamples = [];
   calibrationClickTimes = [];
@@ -1200,7 +1199,6 @@ function processHit(hitTime) {
     return;
   }
   closest.matched = true;
-  // キャリブレーション補正込みのズレ計算
   const drift = (hitTime - closest.time) * 1000 - systemLatency;
   driftSum += drift; driftCount++;
   addTimingMark(drift);
