@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ドラム採点">
 <title>ドラムリズム採点アプリ</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -24,11 +27,27 @@
     margin-bottom: 16px;
     border: 1px solid rgba(255,255,255,0.2);
   }
+  .card-title {
+    font-size: 16px; font-weight: bold; margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
   .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .control-item label { display: block; font-size: 14px; margin-bottom: 6px; opacity: 0.9; }
   .control-item input, .control-item select {
     width: 100%; padding: 10px; border-radius: 8px; border: none;
     font-size: 16px; background: rgba(255,255,255,0.9); color: #333;
+  }
+  .mode-toggle {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .mode-btn {
+    flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.1); color: #fff;
+    border-radius: 10px; font-size: 15px; font-weight: bold;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .mode-btn.active {
+    background: #4fc3f7; border-color: #4fc3f7; color: #fff;
   }
   .bpm-display {
     font-size: 48px; font-weight: bold; text-align: center;
@@ -41,10 +60,17 @@
   }
   .btn-primary { background: #4caf50; color: #fff; }
   .btn-primary:active { background: #388e3c; transform: scale(0.98); }
+  .btn-primary:disabled { background: #666; cursor: not-allowed; }
   .btn-danger { background: #f44336; color: #fff; }
   .btn-danger:active { background: #d32f2f; transform: scale(0.98); }
   .btn-secondary { background: #ff9800; color: #fff; }
   .btn-secondary:active { background: #f57c00; transform: scale(0.98); }
+  .btn-secondary:disabled { background: #666; cursor: not-allowed; }
+  .btn-small { padding: 8px 14px; font-size: 13px; }
+  .btn-outline {
+    background: transparent; color: #fff;
+    border: 1px solid rgba(255,255,255,0.4);
+  }
   .btn-group { text-align: center; }
   .metronome-visual {
     height: 80px; display: flex; align-items: center;
@@ -55,14 +81,19 @@
     background: rgba(255,255,255,0.2);
     border: 3px solid rgba(255,255,255,0.3);
     transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: bold;
   }
   .beat-light.active {
     background: #ffeb3b; border-color: #fff;
     box-shadow: 0 0 30px #ffeb3b;
-    transform: scale(1.2);
+    transform: scale(1.2); color: #333;
   }
   .beat-light.downbeat.active {
     background: #ff5722; box-shadow: 0 0 30px #ff5722;
+  }
+  .beat-light.countin.active {
+    background: #9c27b0; box-shadow: 0 0 30px #9c27b0; color: #fff;
   }
   .score-display {
     text-align: center; padding: 20px;
@@ -115,16 +146,124 @@
   }
   .status.ready { background: rgba(76,175,80,0.3); }
   .status.recording { background: rgba(244,67,54,0.3); }
+  .status.countin { background: rgba(156,39,176,0.3); }
   .sensitivity-value { font-weight: bold; color: #4fc3f7; }
   .info-text { font-size: 12px; opacity: 0.7; margin-top: 8px; text-align: center; }
+  
+  /* プレイヤー管理 */
+  .player-list {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+    margin-bottom: 12px;
+  }
+  .player-item {
+    background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    border: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+  }
+  .player-item.selected {
+    border-color: #4fc3f7; background: rgba(79,195,247,0.2);
+  }
+  .player-name { font-weight: bold; font-size: 14px; }
+  .player-best { font-size: 12px; opacity: 0.8; }
+  .add-player {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .add-player input {
+    flex: 1; padding: 8px; border-radius: 6px; border: none;
+    background: rgba(255,255,255,0.9); color: #333; font-size: 14px;
+  }
+  
+  /* テストモード進捗 */
+  .test-progress {
+    background: rgba(0,0,0,0.3); border-radius: 8px;
+    padding: 12px; margin-bottom: 12px; text-align: center;
+  }
+  .test-progress-bar {
+    height: 8px; background: rgba(255,255,255,0.2);
+    border-radius: 4px; overflow: hidden; margin-top: 8px;
+  }
+  .test-progress-fill {
+    height: 100%; background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+    transition: width 0.3s;
+  }
+  
+  /* 履歴表示 */
+  .history-list {
+    max-height: 200px; overflow-y: auto;
+    background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px;
+  }
+  .history-item {
+    display: grid; grid-template-columns: 1fr auto auto;
+    gap: 8px; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 13px; align-items: center;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-score { font-weight: bold; font-size: 16px; color: #4fc3f7; }
+  .history-date { opacity: 0.7; font-size: 11px; }
+  
+  /* モーダル */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); display: none;
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 16px; padding: 30px; max-width: 400px; width: 90%;
+    text-align: center; border: 1px solid rgba(255,255,255,0.3);
+  }
+  .modal-title { font-size: 24px; margin-bottom: 16px; }
+  .modal-score {
+    font-size: 72px; font-weight: bold;
+    background: linear-gradient(45deg, #4fc3f7, #29b6f6);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin: 20px 0;
+  }
+  .modal-detail { font-size: 14px; opacity: 0.9; margin: 8px 0; }
+  
+  .countin-display {
+    font-size: 120px; font-weight: bold; text-align: center;
+    color: #9c27b0; height: 150px; line-height: 150px;
+    text-shadow: 0 0 30px rgba(156,39,176,0.8);
+    display: none;
+  }
+  .countin-display.active { display: block; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>🥁 ドラムリズム採点</h1>
 
+  <!-- プレイヤー管理 -->
   <div class="card">
-    <div id="status" class="status ready">🎤 マイク許可待ち → 「マイク開始」を押してください</div>
+    <div class="card-title">👥 プレイヤー選択</div>
+    <div class="add-player">
+      <input type="text" id="newPlayerName" placeholder="名前を入力(例:太郎)" maxlength="20">
+      <button class="btn btn-primary btn-small" id="addPlayerBtn">➕ 追加</button>
+    </div>
+    <div class="player-list" id="playerList"></div>
+    <div style="text-align:right;">
+      <button class="btn btn-outline btn-small" id="showHistoryBtn">📊 履歴を見る</button>
+    </div>
+  </div>
+
+  <!-- 履歴表示エリア(初期非表示) -->
+  <div class="card" id="historyCard" style="display:none;">
+    <div class="card-title">📊 <span id="historyPlayerName">--</span>さんのスコア履歴</div>
+    <div class="history-list" id="historyList">
+      <div style="text-align:center; padding:20px; opacity:0.6;">履歴がありません</div>
+    </div>
+  </div>
+
+  <!-- モード切替 -->
+  <div class="card">
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="practice" id="modePractice">🎵 練習モード</button>
+      <button class="mode-btn" data-mode="test" id="modeTest">🎯 テストモード(16小節)</button>
+    </div>
+    <div id="status" class="status ready">🎤 「マイク開始」を押してください</div>
+    
     <div class="controls">
       <div class="control-item">
         <label>BPM(テンポ)</label>
@@ -153,18 +292,26 @@
     </div>
     <div class="bpm-display" id="bpmDisplay">♩ = 100</div>
     <div class="metronome-visual" id="metronomeVisual"></div>
+    <div class="countin-display" id="countinDisplay">4</div>
     <div class="btn-group">
       <button class="btn btn-primary" id="micBtn">🎤 マイク開始</button>
-      <button class="btn btn-secondary" id="startBtn" disabled>▶️ 練習スタート</button>
+      <button class="btn btn-secondary" id="startBtn" disabled>▶️ スタート</button>
       <button class="btn btn-danger" id="stopBtn" disabled>⏹️ 停止</button>
+    </div>
+    <div class="test-progress" id="testProgress" style="display:none;">
+      <div>📏 テスト進捗: <span id="testBarCount">0</span> / 16 小節</div>
+      <div class="test-progress-bar">
+        <div class="test-progress-fill" id="testProgressFill" style="width:0%;"></div>
+      </div>
     </div>
   </div>
 
+  <!-- スコア -->
   <div class="card">
     <div class="score-display">
-      <div style="font-size:14px; opacity:0.8;">総合スコア</div>
+      <div style="font-size:14px; opacity:0.8;" id="scoreLabel">総合スコア</div>
       <div class="score-number" id="score">--</div>
-      <div id="rank" style="font-size:24px; font-weight:bold;">練習を始めましょう</div>
+      <div id="rank" style="font-size:24px; font-weight:bold;">準備完了</div>
     </div>
     <div class="stats-grid">
       <div class="stat-box">
@@ -200,6 +347,7 @@
     </div>
   </div>
 
+  <!-- フィードバック -->
   <div class="card">
     <div class="feedback-area" id="feedback">🎵</div>
     <div class="info-text">
@@ -209,22 +357,158 @@
   </div>
 </div>
 
+<!-- テスト結果モーダル -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">🎯 テスト終了!</div>
+    <div style="font-size:14px; opacity:0.8;" id="modalPlayerName">--</div>
+    <div class="modal-score" id="modalScore">--</div>
+    <div id="modalRank" style="font-size:20px; font-weight:bold; margin-bottom:16px;">--</div>
+    <div class="modal-detail">Perfect: <span id="modalPerfect">0</span> / Good: <span id="modalGood">0</span></div>
+    <div class="modal-detail">Early: <span id="modalEarly">0</span> / Late: <span id="modalLate">0</span> / Miss: <span id="modalMiss">0</span></div>
+    <div class="modal-detail">平均ズレ: <span id="modalAvgDrift">--</span> ms</div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="closeModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let audioContext, analyser, mediaStream, scriptProcessor;
-let isRecording = false, isPlaying = false;
+// ==================== グローバル状態 ====================
+let audioContext, analyser, mediaStream;
+let isRecording = false, isPlaying = false, isCountingIn = false;
 let bpm = 100, beatsPerBar = 4, subdivision = 2;
 let sensitivity = 30;
+let currentMode = 'practice'; // 'practice' or 'test'
 let nextBeatTime = 0, currentBeat = 0;
 let expectedHits = [];
-let hits = [];
 let stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
 let driftSum = 0, driftCount = 0;
 let lastOnsetTime = 0;
 let schedulerTimer = null;
 
-const $ = id => document.getElementById(id);
+// テストモード用
+const TEST_BARS = 16;
+let testStartBeat = 0;
+let testCompleted = false;
 
-// BPM/設定変更
+// プレイヤー管理
+let players = [];
+let currentPlayerId = null;
+
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = 'drumScoreApp_v1';
+
+// ==================== ストレージ管理 ====================
+function loadData() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    players = data.players || [];
+    currentPlayerId = data.currentPlayerId || null;
+    if (players.length === 0) {
+      // 初期プレイヤーを追加
+      players = [
+        { id: genId(), name: 'A(中2)', history: [] },
+        { id: genId(), name: 'B(中2)', history: [] },
+        { id: genId(), name: 'C(中2)', history: [] },
+        { id: genId(), name: 'D(小5)', history: [] }
+      ];
+      saveData();
+    }
+  } catch(e) { players = []; }
+  renderPlayers();
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, currentPlayerId }));
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+// ==================== プレイヤーUI ====================
+function renderPlayers() {
+  const list = $('playerList');
+  list.innerHTML = '';
+  players.forEach(p => {
+    const bestScore = p.history.length > 0 ? Math.max(...p.history.map(h => h.score)) : null;
+    const item = document.createElement('div');
+    item.className = 'player-item' + (p.id === currentPlayerId ? ' selected' : '');
+    item.innerHTML = `
+      <div>
+        <div class="player-name">${escapeHtml(p.name)}</div>
+        <div class="player-best">${bestScore !== null ? `ベスト: ${bestScore}点` : '未挑戦'}</div>
+      </div>
+      <button class="btn btn-outline btn-small" data-remove="${p.id}">✕</button>
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.dataset.remove) {
+        if (confirm(`${p.name}さんを削除しますか?(履歴も消えます)`)) {
+          players = players.filter(x => x.id !== p.id);
+          if (currentPlayerId === p.id) currentPlayerId = null;
+          saveData(); renderPlayers();
+        }
+      } else {
+        currentPlayerId = p.id;
+        saveData(); renderPlayers();
+      }
+    });
+    list.appendChild(item);
+  });
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$('addPlayerBtn').addEventListener('click', () => {
+  const name = $('newPlayerName').value.trim();
+  if (!name) return alert('名前を入力してください');
+  if (players.length >= 8) return alert('最大8名までです');
+  players.push({ id: genId(), name, history: [] });
+  $('newPlayerName').value = '';
+  saveData(); renderPlayers();
+});
+
+// ==================== 履歴表示 ====================
+$('showHistoryBtn').addEventListener('click', () => {
+  const card = $('historyCard');
+  if (!currentPlayerId) return alert('プレイヤーを選択してください');
+  const player = players.find(p => p.id === currentPlayerId);
+  if (!player) return;
+  $('historyPlayerName').textContent = player.name;
+  const list = $('historyList');
+  if (player.history.length === 0) {
+    list.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">履歴がありません</div>';
+  } else {
+    list.innerHTML = '';
+    [...player.history].reverse().forEach(h => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.innerHTML = `
+        <div>
+          <div>♩=${h.bpm} / ${h.beats}/4 / ${h.subLabel}</div>
+          <div class="history-date">${h.date}</div>
+        </div>
+        <div class="history-score">${h.score}点</div>
+        <div style="font-size:11px; opacity:0.7;">P:${h.perfect} G:${h.good}<br>E:${h.early} L:${h.late} M:${h.miss}</div>
+      `;
+      list.appendChild(div);
+    });
+  }
+  card.style.display = card.style.display === 'none' ? 'block' : 'none';
+});
+
+// ==================== モード切替 ====================
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (isPlaying || isCountingIn) return;
+    currentMode = btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    $('testProgress').style.display = currentMode === 'test' ? 'block' : 'none';
+    $('scoreLabel').textContent = currentMode === 'test' ? 'テストスコア' : '練習中スコア';
+  });
+});
+
+// ==================== 設定UI ====================
 $('bpm').addEventListener('input', e => {
   bpm = parseInt(e.target.value);
   $('bpmDisplay').textContent = `♩ = ${bpm}`;
@@ -253,7 +537,7 @@ function renderBeatLights() {
 }
 renderBeatLights();
 
-// マイク開始
+// ==================== マイク ====================
 $('micBtn').addEventListener('click', async () => {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -265,7 +549,6 @@ $('micBtn').addEventListener('click', async () => {
     analyser.fftSize = 512;
     source.connect(analyser);
 
-    // 音量解析ループでオンセット検出
     const buffer = new Uint8Array(analyser.fftSize);
     let prevLevel = 0;
     function detectOnset() {
@@ -278,7 +561,6 @@ $('micBtn').addEventListener('click', async () => {
       const rms = Math.sqrt(sum / buffer.length) * 100;
       const delta = rms - prevLevel;
       const now = audioContext.currentTime;
-      // オンセット判定:急激な音量上昇+前回から100ms以上経過
       if (delta > sensitivity / 10 && rms > sensitivity / 10 && (now - lastOnsetTime) > 0.1) {
         lastOnsetTime = now;
         if (isPlaying) processHit(now);
@@ -288,7 +570,7 @@ $('micBtn').addEventListener('click', async () => {
     }
     detectOnset();
 
-    $('status').textContent = '✅ マイク準備完了 → 「練習スタート」を押してください';
+    $('status').textContent = '✅ マイク準備完了 → 「スタート」を押してください';
     $('micBtn').disabled = true;
     $('startBtn').disabled = false;
   } catch (e) {
@@ -296,66 +578,144 @@ $('micBtn').addEventListener('click', async () => {
   }
 });
 
-// 練習スタート
+// ==================== スタートボタン ====================
 $('startBtn').addEventListener('click', () => {
-  isPlaying = true;
+  if (currentMode === 'test' && !currentPlayerId) {
+    return alert('テストモードではプレイヤーを選択してください');
+  }
+  // 統計リセット
   currentBeat = 0;
-  hits = [];
   expectedHits = [];
   stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
   driftSum = 0; driftCount = 0;
+  testCompleted = false;
   updateStats();
   $('timingGraph').innerHTML = '<div class="timing-center"></div>';
-  nextBeatTime = audioContext.currentTime + 0.1;
-  $('status').textContent = '🔴 練習中...';
-  $('status').className = 'status recording';
+  $('score').textContent = '--';
+  $('rank').textContent = '準備中...';
   $('startBtn').disabled = true;
-  $('stopBtn').disabled = false;
-  scheduler();
+  $('stopBtn').disabled = true;
+  
+  // ボタン無効化
+  document.querySelectorAll('.mode-btn').forEach(b => b.style.pointerEvents = 'none');
+  
+  startCountIn();
 });
 
-// 停止
+// ==================== カウントイン ====================
+function startCountIn() {
+  isCountingIn = true;
+  $('status').textContent = '🎬 カウントイン中... 準備!';
+  $('status').className = 'status countin';
+  const secondsPerBeat = 60.0 / bpm;
+  const countinStart = audioContext.currentTime + 0.3;
+  const countinDisp = $('countinDisplay');
+  countinDisp.classList.add('active');
+  $('metronomeVisual').style.opacity = '0.3';
+  
+  for (let i = 0; i < 4; i++) {
+    const t = countinStart + i * secondsPerBeat;
+    scheduleClick(t, i === 0 ? 'downbeat' : 'main');
+    const delay = (t - audioContext.currentTime) * 1000;
+    setTimeout(() => {
+      countinDisp.textContent = (i + 1);
+      countinDisp.style.transform = 'scale(1.3)';
+      setTimeout(() => { countinDisp.style.transform = 'scale(1)'; }, 100);
+    }, delay);
+  }
+  
+  // カウントイン後、本番スタート
+  const mainStart = countinStart + 4 * secondsPerBeat;
+  setTimeout(() => {
+    countinDisp.classList.remove('active');
+    $('metronomeVisual').style.opacity = '1';
+    isCountingIn = false;
+    isPlaying = true;
+    nextBeatTime = mainStart;
+    testStartBeat = 0;
+    $('status').textContent = currentMode === 'test' ? '🎯 テスト中...' : '🔴 練習中...';
+    $('status').className = 'status recording';
+    $('stopBtn').disabled = false;
+    scheduler();
+  }, (mainStart - audioContext.currentTime) * 1000);
+}
+
+// ==================== 停止ボタン ====================
 $('stopBtn').addEventListener('click', () => {
+  stopPlayback(false);
+});
+
+function stopPlayback(finished) {
   isPlaying = false;
   clearTimeout(schedulerTimer);
-  $('status').textContent = '⏸️ 停止しました。もう一度スタートで再開';
+  $('status').textContent = finished ? '🎯 テスト終了!' : '⏸️ 停止しました';
   $('status').className = 'status ready';
   $('startBtn').disabled = false;
   $('stopBtn').disabled = true;
+  document.querySelectorAll('.mode-btn').forEach(b => b.style.pointerEvents = 'auto');
   finalizePendingHits();
   updateScore();
-});
+  
+  if (finished && currentMode === 'test' && !testCompleted) {
+    testCompleted = true;
+    showTestResult();
+  }
+}
 
-// メトロノームスケジューラ
+// ==================== メトロノーム ====================
 function scheduler() {
   if (!isPlaying) return;
   const secondsPerBeat = 60.0 / bpm;
   const subInterval = secondsPerBeat / subdivision;
+  const totalSubsPerBar = subdivision * beatsPerBar;
+  
   while (nextBeatTime < audioContext.currentTime + 0.1) {
-    scheduleClick(nextBeatTime, currentBeat);
+    // テストモードの終了判定
+    if (currentMode === 'test') {
+      const barsCompleted = Math.floor(currentBeat / totalSubsPerBar);
+      if (barsCompleted >= TEST_BARS) {
+        // 最後の1拍を待って終了
+        setTimeout(() => stopPlayback(true), 300);
+        return;
+      }
+    }
+    
+    scheduleClick(nextBeatTime, getBeatType(currentBeat));
     expectedHits.push({ time: nextBeatTime, matched: false, index: expectedHits.length });
-    // ビジュアル
+    
     const beatInBar = Math.floor(currentBeat / subdivision) % beatsPerBar;
     const isSubMain = currentBeat % subdivision === 0;
     if (isSubMain) {
       setTimeout(() => flashBeat(beatInBar), (nextBeatTime - audioContext.currentTime) * 1000);
     }
+    
     currentBeat++;
     nextBeatTime += subInterval;
-    // 古い期待ヒットのミス判定
     checkMissedHits();
+    
+    // テスト進捗更新
+    if (currentMode === 'test') {
+      const bars = Math.floor(currentBeat / totalSubsPerBar);
+      $('testBarCount').textContent = Math.min(bars, TEST_BARS);
+      $('testProgressFill').style.width = Math.min(100, (bars / TEST_BARS) * 100) + '%';
+    }
   }
   schedulerTimer = setTimeout(scheduler, 25);
 }
 
-function scheduleClick(time, beatIndex) {
+function getBeatType(beatIndex) {
+  const totalSubsPerBar = subdivision * beatsPerBar;
+  if (beatIndex % totalSubsPerBar === 0) return 'downbeat';
+  if (beatIndex % subdivision === 0) return 'main';
+  return 'sub';
+}
+
+function scheduleClick(time, type) {
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
-  const isDown = (beatIndex % (subdivision * beatsPerBar)) === 0;
-  const isMainBeat = beatIndex % subdivision === 0;
-  osc.frequency.value = isDown ? 1200 : (isMainBeat ? 800 : 500);
+  osc.frequency.value = type === 'downbeat' ? 1200 : (type === 'main' ? 800 : 500);
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(isMainBeat ? 0.5 : 0.2, time + 0.001);
+  gain.gain.linearRampToValueAtTime(type === 'sub' ? 0.2 : 0.5, time + 0.001);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
   osc.connect(gain).connect(audioContext.destination);
   osc.start(time); osc.stop(time + 0.05);
@@ -368,9 +728,8 @@ function flashBeat(index) {
   setTimeout(() => el.classList.remove('active'), 100);
 }
 
-// 叩いた瞬間の処理
+// ==================== ヒット判定 ====================
 function processHit(hitTime) {
-  // 最も近い期待ヒットを探す
   let closest = null, minDiff = Infinity;
   for (const eh of expectedHits) {
     if (eh.matched) continue;
@@ -378,12 +737,11 @@ function processHit(hitTime) {
     if (diff < minDiff) { minDiff = diff; closest = eh; }
   }
   if (!closest || minDiff > 0.2) {
-    // 対応する期待ヒットなし(余計な音)
     showFeedback('❓ Extra', '#9e9e9e');
     return;
   }
   closest.matched = true;
-  const drift = (hitTime - closest.time) * 1000; // ms
+  const drift = (hitTime - closest.time) * 1000;
   driftSum += drift; driftCount++;
   addTimingMark(drift);
 
@@ -405,7 +763,6 @@ function processHit(hitTime) {
   updateScore();
 }
 
-// 期待ヒットの中で時間が過ぎたものをミスに
 function checkMissedHits() {
   const now = audioContext.currentTime;
   for (const eh of expectedHits) {
@@ -436,7 +793,6 @@ function addTimingMark(driftMs) {
   const graph = $('timingGraph');
   const mark = document.createElement('div');
   mark.className = 'timing-hit';
-  // -150ms〜+150msを0〜100%にマップ
   const pos = 50 + (driftMs / 150) * 50;
   mark.style.left = Math.max(0, Math.min(100, pos)) + '%';
   const absDrift = Math.abs(driftMs);
@@ -456,12 +812,18 @@ function updateStats() {
   $('avgDrift').textContent = driftCount > 0 ? (driftSum / driftCount).toFixed(1) + ' ms' : '-- ms';
 }
 
+function computeScore() {
+  const total = stats.perfect + stats.good + stats.early + stats.late + stats.miss;
+  if (total === 0) return 0;
+  return Math.round(
+    (stats.perfect * 100 + stats.good * 80 + stats.early * 50 + stats.late * 50) / total
+  );
+}
+
 function updateScore() {
   const total = stats.perfect + stats.good + stats.early + stats.late + stats.miss;
   if (total === 0) return;
-  const score = Math.round(
-    (stats.perfect * 100 + stats.good * 80 + stats.early * 50 + stats.late * 50) / total
-  );
+  const score = computeScore();
   $('score').textContent = score;
   let rank = '';
   if (score >= 95) rank = '🏆 完璧!';
@@ -471,6 +833,54 @@ function updateScore() {
   else rank = '🔄 もう一度';
   $('rank').textContent = rank;
 }
+
+// ==================== テスト結果 ====================
+function showTestResult() {
+  const score = computeScore();
+  const player = players.find(p => p.id === currentPlayerId);
+  if (!player) return;
+  
+  const subLabels = {1:'4分',2:'8分',4:'16分'};
+  
+  // 履歴に保存
+  const record = {
+    date: new Date().toLocaleString('ja-JP'),
+    score, bpm, beats: beatsPerBar,
+    subLabel: subLabels[subdivision] + '音符',
+    perfect: stats.perfect, good: stats.good,
+    early: stats.early, late: stats.late, miss: stats.miss,
+    avgDrift: driftCount > 0 ? (driftSum/driftCount).toFixed(1) : '--'
+  };
+  player.history.push(record);
+  if (player.history.length > 50) player.history.shift(); // 最大50件
+  saveData();
+  renderPlayers();
+  
+  // モーダル表示
+  $('modalPlayerName').textContent = player.name + 'さん';
+  $('modalScore').textContent = score;
+  let rank = '';
+  if (score >= 95) rank = '🏆 完璧!';
+  else if (score >= 85) rank = '🌟 素晴らしい!';
+  else if (score >= 70) rank = '😊 良い感じ';
+  else if (score >= 50) rank = '💪 もう少し';
+  else rank = '🔄 練習しよう';
+  $('modalRank').textContent = rank;
+  $('modalPerfect').textContent = stats.perfect;
+  $('modalGood').textContent = stats.good;
+  $('modalEarly').textContent = stats.early;
+  $('modalLate').textContent = stats.late;
+  $('modalMiss').textContent = stats.miss;
+  $('modalAvgDrift').textContent = record.avgDrift;
+  $('resultModal').classList.add('active');
+}
+
+function closeModal() {
+  $('resultModal').classList.remove('active');
+}
+
+// ==================== 初期化 ====================
+loadData();
 </script>
 </body>
 </html>
