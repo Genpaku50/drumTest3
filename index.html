@@ -12,19 +12,13 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    color: #fff;
-    min-height: 100vh;
-    padding: 20px;
-    user-select: none;
+    color: #fff; min-height: 100vh; padding: 20px; user-select: none;
   }
   .container { max-width: 900px; margin: 0 auto; }
   h1 { text-align: center; font-size: 28px; margin-bottom: 20px; }
   .card {
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
+    background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
     border: 1px solid rgba(255,255,255,0.2);
   }
   .card-title {
@@ -37,18 +31,14 @@
     width: 100%; padding: 10px; border-radius: 8px; border: none;
     font-size: 16px; background: rgba(255,255,255,0.9); color: #333;
   }
-  .mode-toggle {
-    display: flex; gap: 8px; margin-bottom: 12px;
-  }
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
   .mode-btn {
     flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.3);
     background: rgba(255,255,255,0.1); color: #fff;
     border-radius: 10px; font-size: 15px; font-weight: bold;
     cursor: pointer; transition: all 0.2s;
   }
-  .mode-btn.active {
-    background: #4fc3f7; border-color: #4fc3f7; color: #fff;
-  }
+  .mode-btn.active { background: #4fc3f7; border-color: #4fc3f7; color: #fff; }
   .bpm-display {
     font-size: 48px; font-weight: bold; text-align: center;
     color: #4fc3f7; margin: 10px 0;
@@ -71,6 +61,7 @@
     background: transparent; color: #fff;
     border: 1px solid rgba(255,255,255,0.4);
   }
+  .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-group { text-align: center; }
   .metronome-visual {
     height: 80px; display: flex; align-items: center;
@@ -91,9 +82,6 @@
   }
   .beat-light.downbeat.active {
     background: #ff5722; box-shadow: 0 0 30px #ff5722;
-  }
-  .beat-light.countin.active {
-    background: #9c27b0; box-shadow: 0 0 30px #9c27b0; color: #fff;
   }
   .score-display {
     text-align: center; padding: 20px;
@@ -147,10 +135,9 @@
   .status.ready { background: rgba(76,175,80,0.3); }
   .status.recording { background: rgba(244,67,54,0.3); }
   .status.countin { background: rgba(156,39,176,0.3); }
+  .status.calibrating { background: rgba(255,193,7,0.3); }
   .sensitivity-value { font-weight: bold; color: #4fc3f7; }
   .info-text { font-size: 12px; opacity: 0.7; margin-top: 8px; text-align: center; }
-  
-  /* プレイヤー管理 */
   .player-list {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
     margin-bottom: 12px;
@@ -165,15 +152,11 @@
   }
   .player-name { font-weight: bold; font-size: 14px; }
   .player-best { font-size: 12px; opacity: 0.8; }
-  .add-player {
-    display: flex; gap: 8px; margin-bottom: 12px;
-  }
+  .add-player { display: flex; gap: 8px; margin-bottom: 12px; }
   .add-player input {
     flex: 1; padding: 8px; border-radius: 6px; border: none;
     background: rgba(255,255,255,0.9); color: #333; font-size: 14px;
   }
-  
-  /* テストモード進捗 */
   .test-progress {
     background: rgba(0,0,0,0.3); border-radius: 8px;
     padding: 12px; margin-bottom: 12px; text-align: center;
@@ -186,8 +169,6 @@
     height: 100%; background: linear-gradient(90deg, #4fc3f7, #29b6f6);
     transition: width 0.3s;
   }
-  
-  /* 履歴表示 */
   .history-list {
     max-height: 200px; overflow-y: auto;
     background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px;
@@ -200,8 +181,6 @@
   .history-item:last-child { border-bottom: none; }
   .history-score { font-weight: bold; font-size: 16px; color: #4fc3f7; }
   .history-date { opacity: 0.7; font-size: 11px; }
-  
-  /* モーダル */
   .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.7); display: none;
@@ -221,14 +200,99 @@
     margin: 20px 0;
   }
   .modal-detail { font-size: 14px; opacity: 0.9; margin: 8px 0; }
-  
   .countin-display {
     font-size: 120px; font-weight: bold; text-align: center;
     color: #9c27b0; height: 150px; line-height: 150px;
-    text-shadow: 0 0 30px rgba(156,39,176,0.8);
-    display: none;
+    text-shadow: 0 0 30px rgba(156,39,176,0.8); display: none;
   }
   .countin-display.active { display: block; }
+  .preset-select-wrap {
+    display: grid; grid-template-columns: 1fr; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .preset-info {
+    background: rgba(0,0,0,0.3); border-radius: 10px;
+    padding: 12px; margin-bottom: 12px;
+  }
+  .preset-name {
+    font-size: 18px; font-weight: bold; color: #4fc3f7;
+    margin-bottom: 4px;
+  }
+  .preset-desc {
+    font-size: 12px; opacity: 0.8; margin-bottom: 8px;
+  }
+  .pattern-display {
+    background: rgba(0,0,0,0.4); border-radius: 8px;
+    padding: 12px; margin-top: 8px;
+    overflow-x: auto; white-space: nowrap;
+  }
+  .pattern-grid {
+    display: inline-grid; gap: 4px;
+    grid-auto-flow: column;
+  }
+  .pattern-cell {
+    width: 32px; height: 60px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-radius: 6px; font-size: 12px; font-weight: bold;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .pattern-cell.hit { background: rgba(79,195,247,0.3); }
+  .pattern-cell.accent {
+    background: rgba(255,87,34,0.4);
+    color: #fff;
+  }
+  .pattern-cell.rest { opacity: 0.3; }
+  .pattern-cell.current {
+    border-color: #ffeb3b;
+    transform: scale(1.15);
+    box-shadow: 0 0 15px rgba(255,235,59,0.6);
+  }
+  .pattern-hand {
+    font-size: 14px; font-weight: bold;
+  }
+  .pattern-hand.R { color: #4fc3f7; }
+  .pattern-hand.L { color: #ff9800; }
+  .pattern-beat { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+  .custom-editor {
+    background: rgba(0,0,0,0.3); border-radius: 8px;
+    padding: 12px; margin-top: 8px; display: none;
+  }
+  .custom-editor.active { display: block; }
+  .custom-grid {
+    display: grid; grid-template-columns: repeat(8, 1fr);
+    gap: 4px; margin-bottom: 8px;
+  }
+  .custom-cell {
+    aspect-ratio: 1; border-radius: 6px;
+    background: rgba(255,255,255,0.15);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 11px; font-weight: bold;
+    cursor: pointer; transition: all 0.15s;
+    border: 2px solid transparent;
+  }
+  .custom-cell.on { background: rgba(79,195,247,0.4); }
+  .custom-cell.accent { background: rgba(255,87,34,0.5); }
+  .custom-controls {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+  }
+  /* キャリブレーション */
+  .calib-box {
+    background: rgba(0,0,0,0.3); border-radius: 10px;
+    padding: 12px; margin-top: 12px;
+    border-left: 4px solid #ffc107;
+  }
+  .calib-status {
+    font-size: 14px; margin-bottom: 8px;
+  }
+  .calib-value {
+    font-size: 24px; font-weight: bold;
+    color: #4fc3f7;
+  }
+  .calib-value.uncalibrated { color: #ff9800; }
 </style>
 </head>
 <body>
@@ -239,7 +303,7 @@
   <div class="card">
     <div class="card-title">👥 プレイヤー選択</div>
     <div class="add-player">
-      <input type="text" id="newPlayerName" placeholder="名前を入力(例:太郎)" maxlength="20">
+      <input type="text" id="newPlayerName" placeholder="名前を入力" maxlength="20">
       <button class="btn btn-primary btn-small" id="addPlayerBtn">➕ 追加</button>
     </div>
     <div class="player-list" id="playerList"></div>
@@ -248,7 +312,6 @@
     </div>
   </div>
 
-  <!-- 履歴表示エリア(初期非表示) -->
   <div class="card" id="historyCard" style="display:none;">
     <div class="card-title">📊 <span id="historyPlayerName">--</span>さんのスコア履歴</div>
     <div class="history-list" id="historyList">
@@ -256,34 +319,78 @@
     </div>
   </div>
 
-  <!-- モード切替 -->
+  <!-- リズムプリセット -->
+  <div class="card">
+    <div class="card-title">🎼 リズムプリセット</div>
+    <div class="preset-select-wrap">
+      <select id="presetSelect">
+        <optgroup label="基本">
+          <option value="quarter">基本の四分</option>
+          <option value="eighth" selected>基本の八分</option>
+          <option value="sixteenth">基本の十六分</option>
+        </optgroup>
+        <optgroup label="連打系">
+          <option value="doublestroke">二コ打ち(RRLL)</option>
+          <option value="triplestroke">三コ打ち(RRRLLL)</option>
+        </optgroup>
+        <optgroup label="パラディドゥル">
+          <option value="paradiddle1">パラディドゥル1(RLRR LRLL)</option>
+          <option value="paradiddle2">パラディドゥル2(RLLR LRRL)</option>
+          <option value="paradiddle3">パラディドゥル3(RRLR LLRL)</option>
+          <option value="paradiddle4">パラディドゥル4(RLRL RLRL)</option>
+        </optgroup>
+        <optgroup label="アクセント四連符">
+          <option value="accent1">1アクセント(●・・・)</option>
+          <option value="accent2">2アクセント(・●・・)</option>
+          <option value="accent3">3アクセント(・・●・)</option>
+          <option value="accent4">4アクセント(・・・●)</option>
+        </optgroup>
+        <optgroup label="タイミング421">
+          <option value="timing421A">A: 4抜き</option>
+          <option value="timing421B">B: 2抜き</option>
+          <option value="timing421C">C: 3抜き</option>
+          <option value="timing421D">D: 1抜き</option>
+        </optgroup>
+        <optgroup label="カスタム">
+          <option value="custom">🛠️ カスタム(自作)</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="preset-info">
+      <div class="preset-name" id="presetName">基本の八分</div>
+      <div class="preset-desc" id="presetDesc">全ての音を叩く基本リズム</div>
+      <div class="pattern-display">
+        <div class="pattern-grid" id="patternGrid"></div>
+      </div>
+    </div>
+    <div class="custom-editor" id="customEditor">
+      <div style="font-size:13px; margin-bottom:8px;">
+        セルをタップ:オフ→R→L→アクセントR→アクセントL の順に切替
+      </div>
+      <div class="custom-grid" id="customGrid"></div>
+      <div class="custom-controls">
+        <button class="btn btn-outline btn-small" id="customClear">🗑️ クリア</button>
+        <button class="btn btn-outline btn-small" id="customSave">💾 適用</button>
+        <select id="customLength" style="padding:8px; border-radius:6px; border:none; background:rgba(255,255,255,0.9); color:#333;">
+          <option value="8">8マス(1小節/8分)</option>
+          <option value="16" selected>16マス(1小節/16分)</option>
+          <option value="32">32マス(2小節/16分)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 練習設定 -->
   <div class="card">
     <div class="mode-toggle">
       <button class="mode-btn active" data-mode="practice" id="modePractice">🎵 練習モード</button>
       <button class="mode-btn" data-mode="test" id="modeTest">🎯 テストモード(16小節)</button>
     </div>
     <div id="status" class="status ready">🎤 「マイク開始」を押してください</div>
-    
     <div class="controls">
       <div class="control-item">
         <label>BPM(テンポ)</label>
         <input type="range" id="bpm" min="60" max="240" value="100" step="1">
-      </div>
-      <div class="control-item">
-        <label>拍子</label>
-        <select id="beats">
-          <option value="4" selected>4/4</option>
-          <option value="3">3/4</option>
-          <option value="2">2/4</option>
-        </select>
-      </div>
-      <div class="control-item">
-        <label>音符の細かさ</label>
-        <select id="subdivision">
-          <option value="1">4分音符</option>
-          <option value="2" selected>8分音符</option>
-          <option value="4">16分音符</option>
-        </select>
       </div>
       <div class="control-item">
         <label>マイク感度: <span class="sensitivity-value" id="sensVal">30</span></label>
@@ -298,6 +405,24 @@
       <button class="btn btn-secondary" id="startBtn" disabled>▶️ スタート</button>
       <button class="btn btn-danger" id="stopBtn" disabled>⏹️ 停止</button>
     </div>
+
+    <!-- キャリブレーション -->
+    <div class="calib-box">
+      <div class="calib-status">
+        🎯 <strong>環境補正(キャリブレーション)</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <div>
+          <div style="font-size:12px; opacity:0.8;">現在の補正値</div>
+          <div class="calib-value uncalibrated" id="latencyDisplay">未測定</div>
+        </div>
+        <button class="btn btn-outline btn-small" id="calibrateBtn" disabled>🎯 自動キャリブレーション実行</button>
+      </div>
+      <div style="font-size:11px; opacity:0.7; margin-top:8px;">
+        練習開始前に1回実行してください。iPadを固定し、静かな環境で測定します。
+      </div>
+    </div>
+
     <div class="test-progress" id="testProgress" style="display:none;">
       <div>📏 テスト進捗: <span id="testBarCount">0</span> / 16 小節</div>
       <div class="test-progress-bar">
@@ -306,7 +431,6 @@
     </div>
   </div>
 
-  <!-- スコア -->
   <div class="card">
     <div class="score-display">
       <div style="font-size:14px; opacity:0.8;" id="scoreLabel">総合スコア</div>
@@ -314,50 +438,28 @@
       <div id="rank" style="font-size:24px; font-weight:bold;">準備完了</div>
     </div>
     <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-label">Perfect</div>
-        <div class="stat-value perfect" id="perfectCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Good</div>
-        <div class="stat-value good" id="goodCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Miss</div>
-        <div class="stat-value miss" id="missCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Early(早い)</div>
-        <div class="stat-value early" id="earlyCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Late(遅い)</div>
-        <div class="stat-value late" id="lateCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">平均ズレ</div>
-        <div class="stat-value" id="avgDrift">-- ms</div>
-      </div>
+      <div class="stat-box"><div class="stat-label">Perfect</div><div class="stat-value perfect" id="perfectCount">0</div></div>
+      <div class="stat-box"><div class="stat-label">Good</div><div class="stat-value good" id="goodCount">0</div></div>
+      <div class="stat-box"><div class="stat-label">Miss</div><div class="stat-value miss" id="missCount">0</div></div>
+      <div class="stat-box"><div class="stat-label">Early(早い)</div><div class="stat-value early" id="earlyCount">0</div></div>
+      <div class="stat-box"><div class="stat-label">Late(遅い)</div><div class="stat-value late" id="lateCount">0</div></div>
+      <div class="stat-box"><div class="stat-label">平均ズレ</div><div class="stat-value" id="avgDrift">-- ms</div></div>
     </div>
     <div style="margin-top: 16px;">
       <div style="font-size:12px; opacity:0.8;">タイミング分布(左=早い / 中央=正確 / 右=遅い)</div>
-      <div class="timing-graph" id="timingGraph">
-        <div class="timing-center"></div>
-      </div>
+      <div class="timing-graph" id="timingGraph"><div class="timing-center"></div></div>
     </div>
   </div>
 
-  <!-- フィードバック -->
   <div class="card">
     <div class="feedback-area" id="feedback">🎵</div>
     <div class="info-text">
       判定基準:Perfect ±30ms / Good ±60ms / Miss ±120ms超<br>
-      練習パッドやスネアをiPadに近づけて叩いてください
+      アクセントは強く、それ以外は p(ピアノ)で叩く
     </div>
   </div>
 </div>
 
-<!-- テスト結果モーダル -->
 <div class="modal-overlay" id="resultModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">🎯 テスト終了!</div>
@@ -374,44 +476,178 @@
 </div>
 
 <script>
+// ==================== リズムプリセット定義 ====================
+const PRESETS = {
+  quarter: {
+    name: '基本の四分', desc: '1拍ごとに叩く基本リズム',
+    subdivision: 1, beatsPerBar: 4,
+    pattern: [{hand:'R'},{hand:'L'},{hand:'R'},{hand:'L'}]
+  },
+  eighth: {
+    name: '基本の八分', desc: '全ての音を叩く基本リズム。まずはこれで身体を作る',
+    subdivision: 2, beatsPerBar: 4,
+    pattern: [
+      {hand:'R'},{hand:'L'},{hand:'R'},{hand:'L'},
+      {hand:'R'},{hand:'L'},{hand:'R'},{hand:'L'}
+    ]
+  },
+  sixteenth: {
+    name: '基本の十六分', desc: '速いテンポ管理の練習に最適',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R' : 'L'}))
+  },
+  doublestroke: {
+    name: '二コ打ち(RRLL)', desc: 'プッシュ・プルストロークの練習。二発目の音量に注意',
+    subdivision: 2, beatsPerBar: 4,
+    pattern: [
+      {hand:'R'},{hand:'R'},{hand:'L'},{hand:'L'},
+      {hand:'R'},{hand:'R'},{hand:'L'},{hand:'L'}
+    ]
+  },
+  triplestroke: {
+    name: '三コ打ち(RRRLLL)', desc: '真ん中の音はバックフィンガーだけで叩く',
+    subdivision: 3, beatsPerBar: 4,
+    pattern: [
+      {hand:'R'},{hand:'R'},{hand:'R'},
+      {hand:'L'},{hand:'L'},{hand:'L'},
+      {hand:'R'},{hand:'R'},{hand:'R'},
+      {hand:'L'},{hand:'L'},{hand:'L'}
+    ]
+  },
+  paradiddle1: {
+    name: 'パラディドゥル1', desc: 'RLRR LRLL(基本のパラ)',
+    subdivision: 2, beatsPerBar: 4,
+    pattern: [
+      {hand:'R',accent:true},{hand:'L'},{hand:'R'},{hand:'R'},
+      {hand:'L',accent:true},{hand:'R'},{hand:'L'},{hand:'L'}
+    ]
+  },
+  paradiddle2: {
+    name: 'パラディドゥル2', desc: 'RLLR LRRL(インバーテッド)',
+    subdivision: 2, beatsPerBar: 4,
+    pattern: [
+      {hand:'R',accent:true},{hand:'L'},{hand:'L'},{hand:'R'},
+      {hand:'L',accent:true},{hand:'R'},{hand:'R'},{hand:'L'}
+    ]
+  },
+  paradiddle3: {
+    name: 'パラディドゥル3', desc: 'RRLR LLRL(ダブル頭)',
+    subdivision: 2, beatsPerBar: 4,
+    pattern: [
+      {hand:'R',accent:true},{hand:'R'},{hand:'L'},{hand:'R'},
+      {hand:'L',accent:true},{hand:'L'},{hand:'R'},{hand:'L'}
+    ]
+  },
+  paradiddle4: {
+    name: 'パラディドゥル4', desc: 'RLRL RLRL(シングルベース)',
+    subdivision: 2, beatsPerBar: 4,
+    pattern: [
+      {hand:'R',accent:true},{hand:'L'},{hand:'R'},{hand:'L'},
+      {hand:'R',accent:true},{hand:'L'},{hand:'R'},{hand:'L'}
+    ]
+  },
+  accent1: {
+    name: '1アクセント', desc: '四連符の1発目にアクセント',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R':'L', accent: i%4===0}))
+  },
+  accent2: {
+    name: '2アクセント', desc: '四連符の2発目にアクセント',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R':'L', accent: i%4===1}))
+  },
+  accent3: {
+    name: '3アクセント', desc: '四連符の3発目にアクセント',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R':'L', accent: i%4===2}))
+  },
+  accent4: {
+    name: '4アクセント', desc: '四連符の4発目にアクセント',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R':'L', accent: i%4===3}))
+  },
+  timing421A: {
+    name: 'タイミング421 A(4抜き)', desc: '四連符の4発目を抜く',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>{
+      const pos = i%4;
+      return pos===3 ? {hand:null} : {hand: i%2===0 ? 'R':'L'};
+    })
+  },
+  timing421B: {
+    name: 'タイミング421 B(2抜き)', desc: '四連符の2発目を抜く',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>{
+      const pos = i%4;
+      return pos===1 ? {hand:null} : {hand: i%2===0 ? 'R':'L'};
+    })
+  },
+  timing421C: {
+    name: 'タイミング421 C(3抜き)', desc: '四連符の3発目を抜く',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>{
+      const pos = i%4;
+      return pos===2 ? {hand:null} : {hand: i%2===0 ? 'R':'L'};
+    })
+  },
+  timing421D: {
+    name: 'タイミング421 D(1抜き)', desc: '四連符の1発目を抜く',
+    subdivision: 4, beatsPerBar: 4,
+    pattern: Array.from({length:16}, (_,i)=>{
+      const pos = i%4;
+      return pos===0 ? {hand:null} : {hand: i%2===0 ? 'R':'L'};
+    })
+  }
+};
+
+let customPattern = {
+  name: 'カスタム', desc: '自作リズム',
+  subdivision: 4, beatsPerBar: 4,
+  pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R':'L'}))
+};
+
 // ==================== グローバル状態 ====================
 let audioContext, analyser, mediaStream;
 let isRecording = false, isPlaying = false, isCountingIn = false;
-let bpm = 100, beatsPerBar = 4, subdivision = 2;
-let sensitivity = 30;
-let currentMode = 'practice'; // 'practice' or 'test'
-let nextBeatTime = 0, currentBeat = 0;
+let bpm = 100, sensitivity = 30;
+let currentMode = 'practice';
+let currentPresetKey = 'eighth';
+let currentPattern = PRESETS.eighth;
+let nextBeatTime = 0, currentPatternIndex = 0;
 let expectedHits = [];
 let stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
 let driftSum = 0, driftCount = 0;
 let lastOnsetTime = 0;
 let schedulerTimer = null;
-
-// テストモード用
 const TEST_BARS = 16;
-let testStartBeat = 0;
+let barsCompleted = 0;
 let testCompleted = false;
-
-// プレイヤー管理
 let players = [];
 let currentPlayerId = null;
 
-const $ = id => document.getElementById(id);
-const STORAGE_KEY = 'drumScoreApp_v1';
+// キャリブレーション関連
+let systemLatency = 0; // ミリ秒
+let isCalibrating = false;
+let calibrationSamples = [];
+let calibrationClickTimes = [];
 
-// ==================== ストレージ管理 ====================
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = 'drumScoreApp_v3';
+
+// ==================== ストレージ ====================
 function loadData() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     players = data.players || [];
     currentPlayerId = data.currentPlayerId || null;
+    if (data.customPattern) customPattern = data.customPattern;
+    if (typeof data.systemLatency === 'number') systemLatency = data.systemLatency;
     if (players.length === 0) {
-      // 初期プレイヤーを追加
       players = [
-        { id: genId(), name: 'A(中2)', history: [] },
-        { id: genId(), name: 'B(中2)', history: [] },
-        { id: genId(), name: 'C(中2)', history: [] },
-        { id: genId(), name: 'D(小5)', history: [] }
+        { id: genId(), name: 'はると', history: [] },
+        { id: genId(), name: 'れお', history: [] },
+        { id: genId(), name: 'せんが', history: [] },
+        { id: genId(), name: 'れんと', history: [] }
       ];
       saveData();
     }
@@ -419,7 +655,9 @@ function loadData() {
   renderPlayers();
 }
 function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, currentPlayerId }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+    players, currentPlayerId, customPattern, systemLatency 
+  }));
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
 
@@ -440,7 +678,7 @@ function renderPlayers() {
     `;
     item.addEventListener('click', (e) => {
       if (e.target.dataset.remove) {
-        if (confirm(`${p.name}さんを削除しますか?(履歴も消えます)`)) {
+        if (confirm(`${p.name}さんを削除しますか?`)) {
           players = players.filter(x => x.id !== p.id);
           if (currentPlayerId === p.id) currentPlayerId = null;
           saveData(); renderPlayers();
@@ -453,11 +691,9 @@ function renderPlayers() {
     list.appendChild(item);
   });
 }
-
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-
 $('addPlayerBtn').addEventListener('click', () => {
   const name = $('newPlayerName').value.trim();
   if (!name) return alert('名前を入力してください');
@@ -467,7 +703,6 @@ $('addPlayerBtn').addEventListener('click', () => {
   saveData(); renderPlayers();
 });
 
-// ==================== 履歴表示 ====================
 $('showHistoryBtn').addEventListener('click', () => {
   const card = $('historyCard');
   if (!currentPlayerId) return alert('プレイヤーを選択してください');
@@ -484,8 +719,8 @@ $('showHistoryBtn').addEventListener('click', () => {
       div.className = 'history-item';
       div.innerHTML = `
         <div>
-          <div>♩=${h.bpm} / ${h.beats}/4 / ${h.subLabel}</div>
-          <div class="history-date">${h.date}</div>
+          <div>♩=${h.bpm} / ${h.presetName || '基本'}</div>
+          <div class="history-date">${h.date}${h.latency !== undefined ? ' / 補正:' + h.latency + 'ms' : ''}</div>
         </div>
         <div class="history-score">${h.score}点</div>
         <div style="font-size:11px; opacity:0.7;">P:${h.perfect} G:${h.good}<br>E:${h.early} L:${h.late} M:${h.miss}</div>
@@ -496,7 +731,108 @@ $('showHistoryBtn').addEventListener('click', () => {
   card.style.display = card.style.display === 'none' ? 'block' : 'none';
 });
 
-// ==================== モード切替 ====================
+// ==================== プリセット選択 ====================
+$('presetSelect').addEventListener('change', e => {
+  const key = e.target.value;
+  currentPresetKey = key;
+  if (key === 'custom') {
+    currentPattern = customPattern;
+    $('customEditor').classList.add('active');
+    renderCustomEditor();
+  } else {
+    currentPattern = PRESETS[key];
+    $('customEditor').classList.remove('active');
+  }
+  renderPresetInfo();
+  renderBeatLights();
+});
+
+function renderPresetInfo() {
+  $('presetName').textContent = currentPattern.name;
+  $('presetDesc').textContent = currentPattern.desc;
+  const grid = $('patternGrid');
+  grid.innerHTML = '';
+  currentPattern.pattern.forEach((step, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'pattern-cell';
+    cell.id = `pcell${i}`;
+    if (step.hand === null) {
+      cell.classList.add('rest');
+      cell.innerHTML = `<div class="pattern-hand">−</div>`;
+    } else {
+      cell.classList.add(step.accent ? 'accent' : 'hit');
+      cell.innerHTML = `<div class="pattern-hand ${step.hand}">${step.hand}</div>` +
+                       (step.accent ? '<div class="pattern-beat">></div>' : '');
+    }
+    grid.appendChild(cell);
+  });
+}
+
+function highlightPatternCell(index) {
+  document.querySelectorAll('.pattern-cell.current').forEach(el => el.classList.remove('current'));
+  const cell = $('pcell' + index);
+  if (cell) cell.classList.add('current');
+}
+
+// ==================== カスタムエディタ ====================
+function renderCustomEditor() {
+  $('customLength').value = customPattern.pattern.length;
+  const grid = $('customGrid');
+  grid.innerHTML = '';
+  customPattern.pattern.forEach((step, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'custom-cell';
+    let display = '−';
+    if (step.hand) {
+      cell.classList.add(step.accent ? 'accent' : 'on');
+      display = step.hand + (step.accent ? '>' : '');
+    }
+    cell.textContent = display;
+    cell.addEventListener('click', () => cycleCustomCell(i));
+    grid.appendChild(cell);
+  });
+}
+
+function cycleCustomCell(i) {
+  const step = customPattern.pattern[i];
+  if (step.hand === null) { step.hand = 'R'; step.accent = false; }
+  else if (step.hand === 'R' && !step.accent) { step.hand = 'L'; step.accent = false; }
+  else if (step.hand === 'L' && !step.accent) { step.hand = 'R'; step.accent = true; }
+  else if (step.hand === 'R' && step.accent) { step.hand = 'L'; step.accent = true; }
+  else { step.hand = null; step.accent = false; }
+  renderCustomEditor();
+}
+
+$('customClear').addEventListener('click', () => {
+  const len = parseInt($('customLength').value);
+  customPattern.pattern = Array.from({length:len}, ()=>({hand:null, accent:false}));
+  renderCustomEditor();
+});
+
+$('customLength').addEventListener('change', e => {
+  const len = parseInt(e.target.value);
+  const sub = len === 8 ? 2 : 4;
+  const beats = len === 32 ? 8 : 4;
+  customPattern.subdivision = sub;
+  customPattern.beatsPerBar = beats;
+  const oldLen = customPattern.pattern.length;
+  if (len > oldLen) {
+    for (let i = oldLen; i < len; i++) customPattern.pattern.push({hand:null, accent:false});
+  } else {
+    customPattern.pattern = customPattern.pattern.slice(0, len);
+  }
+  renderCustomEditor();
+});
+
+$('customSave').addEventListener('click', () => {
+  currentPattern = customPattern;
+  saveData();
+  renderPresetInfo();
+  renderBeatLights();
+  alert('カスタムパターンを適用しました');
+});
+
+// ==================== モード ====================
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (isPlaying || isCountingIn) return;
@@ -508,17 +844,10 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
-// ==================== 設定UI ====================
+// ==================== 設定 ====================
 $('bpm').addEventListener('input', e => {
   bpm = parseInt(e.target.value);
   $('bpmDisplay').textContent = `♩ = ${bpm}`;
-});
-$('beats').addEventListener('change', e => {
-  beatsPerBar = parseInt(e.target.value);
-  renderBeatLights();
-});
-$('subdivision').addEventListener('change', e => {
-  subdivision = parseInt(e.target.value);
 });
 $('sensitivity').addEventListener('input', e => {
   sensitivity = parseInt(e.target.value);
@@ -528,14 +857,15 @@ $('sensitivity').addEventListener('input', e => {
 function renderBeatLights() {
   const container = $('metronomeVisual');
   container.innerHTML = '';
-  for (let i = 0; i < beatsPerBar; i++) {
+  const beats = currentPattern.beatsPerBar;
+  for (let i = 0; i < beats; i++) {
     const light = document.createElement('div');
     light.className = 'beat-light' + (i === 0 ? ' downbeat' : '');
     light.id = `beat${i}`;
+    light.textContent = i + 1;
     container.appendChild(light);
   }
 }
-renderBeatLights();
 
 // ==================== マイク ====================
 $('micBtn').addEventListener('click', async () => {
@@ -548,7 +878,6 @@ $('micBtn').addEventListener('click', async () => {
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 512;
     source.connect(analyser);
-
     const buffer = new Uint8Array(analyser.fftSize);
     let prevLevel = 0;
     function detectOnset() {
@@ -563,28 +892,158 @@ $('micBtn').addEventListener('click', async () => {
       const now = audioContext.currentTime;
       if (delta > sensitivity / 10 && rms > sensitivity / 10 && (now - lastOnsetTime) > 0.1) {
         lastOnsetTime = now;
-        if (isPlaying) processHit(now);
+        if (isCalibrating) recordCalibrationSample(now);
+        else if (isPlaying) processHit(now);
       }
       prevLevel = rms;
       requestAnimationFrame(detectOnset);
     }
     detectOnset();
-
-    $('status').textContent = '✅ マイク準備完了 → 「スタート」を押してください';
+    $('status').textContent = '✅ マイク準備完了 → キャリブレーションを推奨';
     $('micBtn').disabled = true;
     $('startBtn').disabled = false;
+    $('calibrateBtn').disabled = false;
   } catch (e) {
     $('status').textContent = '❌ マイクエラー: ' + e.message;
   }
 });
 
-// ==================== スタートボタン ====================
+// ==================== キャリブレーション ====================
+function updateLatencyDisplay() {
+  const disp = $('latencyDisplay');
+  if (systemLatency === 0) {
+    disp.textContent = '未測定(補正なし)';
+    disp.classList.add('uncalibrated');
+  } else {
+    disp.textContent = `${systemLatency.toFixed(1)} ms(補正中)`;
+    disp.classList.remove('uncalibrated');
+  }
+}
+
+$('calibrateBtn').addEventListener('click', async () => {
+  if (isPlaying || isCountingIn) return alert('練習を停止してから実行してください');
+  if (!confirm('🎯 自動キャリブレーションを開始します\n\n' +
+               '📱 iPadを叩く場所(スネアの近く)に固定してください\n' +
+               '🔊 内蔵スピーカーで音を10回鳴らします\n' +
+               '🎤 マイクで音を拾って往復遅延を測定します\n\n' +
+               '⚠️ 測定中は静かに(絶対に叩かないでください)\n\n' +
+               '開始しますか?')) return;
+  
+  isCalibrating = true;
+  calibrationSamples = [];
+  calibrationClickTimes = [];
+  $('calibrateBtn').disabled = true;
+  $('startBtn').disabled = true;
+  $('micBtn').disabled = true;
+  $('status').textContent = '🎯 キャリブレーション中... 静かに!';
+  $('status').className = 'status calibrating';
+  
+  const NUM_CLICKS = 10;
+  const CLICK_INTERVAL = 0.8;
+  const startTime = audioContext.currentTime + 0.8;
+  
+  for (let i = 0; i < NUM_CLICKS; i++) {
+    const t = startTime + i * CLICK_INTERVAL;
+    calibrationClickTimes.push(t);
+    scheduleCalibrationClick(t);
+  }
+  
+  for (let i = 0; i < NUM_CLICKS; i++) {
+    const delay = (startTime + i * CLICK_INTERVAL - audioContext.currentTime) * 1000;
+    setTimeout(() => {
+      $('status').textContent = `🎯 測定中... (${i+1}/${NUM_CLICKS})`;
+    }, delay);
+  }
+  
+  const totalDuration = (0.8 + NUM_CLICKS * CLICK_INTERVAL + 1) * 1000;
+  setTimeout(() => finalizeCalibration(), totalDuration);
+});
+
+function scheduleCalibrationClick(time) {
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  osc.frequency.value = 2000;
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(0.7, time + 0.001);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  osc.connect(gain).connect(audioContext.destination);
+  osc.start(time); osc.stop(time + 0.08);
+}
+
+function recordCalibrationSample(detectedTime) {
+  let closest = null, minDiff = Infinity;
+  for (const t of calibrationClickTimes) {
+    const diff = detectedTime - t;
+    if (diff >= 0 && diff < minDiff) { minDiff = diff; closest = t; }
+  }
+  if (closest !== null && minDiff < 0.4) {
+    const delayMs = (detectedTime - closest) * 1000;
+    if (delayMs > 0 && delayMs < 400) {
+      calibrationSamples.push(delayMs);
+    }
+  }
+}
+
+function finalizeCalibration() {
+  isCalibrating = false;
+  $('calibrateBtn').disabled = false;
+  $('startBtn').disabled = false;
+  
+  if (calibrationSamples.length < 5) {
+    $('status').textContent = '❌ 測定失敗(サンプル不足)';
+    $('status').className = 'status ready';
+    alert(`測定サンプルが少なすぎます(${calibrationSamples.length}個/10個中)\n\n` +
+          '対策:\n' +
+          '・マイク感度を上げる(現在: ' + sensitivity + ')\n' +
+          '・iPadの音量を上げる\n' +
+          '・静かな環境で実行する\n' +
+          '・iPadをスネアの近くに置く');
+    return;
+  }
+  
+  const sorted = [...calibrationSamples].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  const avg = sorted.reduce((a,b) => a+b, 0) / sorted.length;
+  const stdDev = Math.sqrt(sorted.reduce((sum,v) => sum + (v-avg)*(v-avg), 0) / sorted.length);
+  
+  systemLatency = median;
+  saveData();
+  updateLatencyDisplay();
+  
+  $('status').textContent = `✅ キャリブレーション完了`;
+  $('status').className = 'status ready';
+  
+  let quality = '';
+  if (stdDev < 10) quality = '✨ 非常に安定した測定';
+  else if (stdDev < 20) quality = '👍 良好な測定';
+  else if (stdDev < 40) quality = '😊 まあまあの測定';
+  else quality = '⚠️ 測定にばらつき有り(環境ノイズが多い可能性)';
+  
+  alert(`✅ キャリブレーション完了!\n\n` +
+        `📊 測定結果:\n` +
+        `・有効サンプル: ${calibrationSamples.length}/10\n` +
+        `・中央値: ${median.toFixed(1)} ms(採用)\n` +
+        `・平均値: ${avg.toFixed(1)} ms\n` +
+        `・最小/最大: ${min.toFixed(1)} / ${max.toFixed(1)} ms\n` +
+        `・標準偏差: ${stdDev.toFixed(1)} ms\n\n` +
+        `${quality}\n\n` +
+        `以降、この値でスコアを自動補正します。`);
+}
+
+// ==================== スタート ====================
 $('startBtn').addEventListener('click', () => {
   if (currentMode === 'test' && !currentPlayerId) {
     return alert('テストモードではプレイヤーを選択してください');
   }
-  // 統計リセット
-  currentBeat = 0;
+  if (systemLatency === 0) {
+    if (!confirm('⚠️ まだキャリブレーションが実行されていません\n\n' +
+                 '補正なしで進めますか?\n' +
+                 '(先にキャリブレーションを推奨します)')) return;
+  }
+  currentPatternIndex = 0;
+  barsCompleted = 0;
   expectedHits = [];
   stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
   driftSum = 0; driftCount = 0;
@@ -595,10 +1054,8 @@ $('startBtn').addEventListener('click', () => {
   $('rank').textContent = '準備中...';
   $('startBtn').disabled = true;
   $('stopBtn').disabled = true;
-  
-  // ボタン無効化
+  $('calibrateBtn').disabled = true;
   document.querySelectorAll('.mode-btn').forEach(b => b.style.pointerEvents = 'none');
-  
   startCountIn();
 });
 
@@ -612,7 +1069,6 @@ function startCountIn() {
   const countinDisp = $('countinDisplay');
   countinDisp.classList.add('active');
   $('metronomeVisual').style.opacity = '0.3';
-  
   for (let i = 0; i < 4; i++) {
     const t = countinStart + i * secondsPerBeat;
     scheduleClick(t, i === 0 ? 'downbeat' : 'main');
@@ -623,8 +1079,6 @@ function startCountIn() {
       setTimeout(() => { countinDisp.style.transform = 'scale(1)'; }, 100);
     }, delay);
   }
-  
-  // カウントイン後、本番スタート
   const mainStart = countinStart + 4 * secondsPerBeat;
   setTimeout(() => {
     countinDisp.classList.remove('active');
@@ -632,7 +1086,6 @@ function startCountIn() {
     isCountingIn = false;
     isPlaying = true;
     nextBeatTime = mainStart;
-    testStartBeat = 0;
     $('status').textContent = currentMode === 'test' ? '🎯 テスト中...' : '🔴 練習中...';
     $('status').className = 'status recording';
     $('stopBtn').disabled = false;
@@ -640,10 +1093,8 @@ function startCountIn() {
   }, (mainStart - audioContext.currentTime) * 1000);
 }
 
-// ==================== 停止ボタン ====================
-$('stopBtn').addEventListener('click', () => {
-  stopPlayback(false);
-});
+// ==================== 停止 ====================
+$('stopBtn').addEventListener('click', () => stopPlayback(false));
 
 function stopPlayback(finished) {
   isPlaying = false;
@@ -652,62 +1103,70 @@ function stopPlayback(finished) {
   $('status').className = 'status ready';
   $('startBtn').disabled = false;
   $('stopBtn').disabled = true;
+  $('calibrateBtn').disabled = false;
   document.querySelectorAll('.mode-btn').forEach(b => b.style.pointerEvents = 'auto');
   finalizePendingHits();
   updateScore();
-  
+  document.querySelectorAll('.pattern-cell.current').forEach(el => el.classList.remove('current'));
   if (finished && currentMode === 'test' && !testCompleted) {
     testCompleted = true;
     showTestResult();
   }
 }
 
-// ==================== メトロノーム ====================
+// ==================== スケジューラ ====================
 function scheduler() {
   if (!isPlaying) return;
   const secondsPerBeat = 60.0 / bpm;
-  const subInterval = secondsPerBeat / subdivision;
-  const totalSubsPerBar = subdivision * beatsPerBar;
+  const subInterval = secondsPerBeat / currentPattern.subdivision;
+  const patternLen = currentPattern.pattern.length;
   
   while (nextBeatTime < audioContext.currentTime + 0.1) {
-    // テストモードの終了判定
-    if (currentMode === 'test') {
-      const barsCompleted = Math.floor(currentBeat / totalSubsPerBar);
-      if (barsCompleted >= TEST_BARS) {
-        // 最後の1拍を待って終了
-        setTimeout(() => stopPlayback(true), 300);
-        return;
+    if (currentMode === 'test' && barsCompleted >= TEST_BARS) {
+      setTimeout(() => stopPlayback(true), 300);
+      return;
+    }
+    
+    const step = currentPattern.pattern[currentPatternIndex];
+    const posInPattern = currentPatternIndex;
+    const beatInBar = Math.floor(posInPattern / currentPattern.subdivision) % currentPattern.beatsPerBar;
+    const isDownbeat = posInPattern === 0;
+    const isMainBeat = posInPattern % currentPattern.subdivision === 0;
+    
+    if (isMainBeat) {
+      scheduleClick(nextBeatTime, isDownbeat ? 'downbeat' : 'main');
+    }
+    
+    if (step.hand !== null) {
+      expectedHits.push({
+        time: nextBeatTime,
+        matched: false,
+        index: expectedHits.length,
+        hand: step.hand,
+        accent: !!step.accent
+      });
+    }
+    
+    const localIdx = currentPatternIndex;
+    const flashTime = (nextBeatTime - audioContext.currentTime) * 1000;
+    setTimeout(() => {
+      highlightPatternCell(localIdx);
+      if (isMainBeat) flashBeat(beatInBar);
+    }, flashTime);
+    
+    currentPatternIndex++;
+    if (currentPatternIndex >= patternLen) {
+      currentPatternIndex = 0;
+      barsCompleted++;
+      if (currentMode === 'test') {
+        $('testBarCount').textContent = Math.min(barsCompleted, TEST_BARS);
+        $('testProgressFill').style.width = Math.min(100, (barsCompleted / TEST_BARS) * 100) + '%';
       }
     }
-    
-    scheduleClick(nextBeatTime, getBeatType(currentBeat));
-    expectedHits.push({ time: nextBeatTime, matched: false, index: expectedHits.length });
-    
-    const beatInBar = Math.floor(currentBeat / subdivision) % beatsPerBar;
-    const isSubMain = currentBeat % subdivision === 0;
-    if (isSubMain) {
-      setTimeout(() => flashBeat(beatInBar), (nextBeatTime - audioContext.currentTime) * 1000);
-    }
-    
-    currentBeat++;
     nextBeatTime += subInterval;
     checkMissedHits();
-    
-    // テスト進捗更新
-    if (currentMode === 'test') {
-      const bars = Math.floor(currentBeat / totalSubsPerBar);
-      $('testBarCount').textContent = Math.min(bars, TEST_BARS);
-      $('testProgressFill').style.width = Math.min(100, (bars / TEST_BARS) * 100) + '%';
-    }
   }
   schedulerTimer = setTimeout(scheduler, 25);
-}
-
-function getBeatType(beatIndex) {
-  const totalSubsPerBar = subdivision * beatsPerBar;
-  if (beatIndex % totalSubsPerBar === 0) return 'downbeat';
-  if (beatIndex % subdivision === 0) return 'main';
-  return 'sub';
 }
 
 function scheduleClick(time, type) {
@@ -715,7 +1174,7 @@ function scheduleClick(time, type) {
   const gain = audioContext.createGain();
   osc.frequency.value = type === 'downbeat' ? 1200 : (type === 'main' ? 800 : 500);
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(type === 'sub' ? 0.2 : 0.5, time + 0.001);
+  gain.gain.linearRampToValueAtTime(type === 'sub' ? 0.2 : 0.4, time + 0.001);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
   osc.connect(gain).connect(audioContext.destination);
   osc.start(time); osc.stop(time + 0.05);
@@ -728,7 +1187,7 @@ function flashBeat(index) {
   setTimeout(() => el.classList.remove('active'), 100);
 }
 
-// ==================== ヒット判定 ====================
+// ==================== ヒット判定(補正込み) ====================
 function processHit(hitTime) {
   let closest = null, minDiff = Infinity;
   for (const eh of expectedHits) {
@@ -741,24 +1200,17 @@ function processHit(hitTime) {
     return;
   }
   closest.matched = true;
-  const drift = (hitTime - closest.time) * 1000;
+  // キャリブレーション補正込みのズレ計算
+  const drift = (hitTime - closest.time) * 1000 - systemLatency;
   driftSum += drift; driftCount++;
   addTimingMark(drift);
-
   const absDrift = Math.abs(drift);
-  if (absDrift < 30) {
-    stats.perfect++;
-    showFeedback('✨ PERFECT', '#4caf50');
-  } else if (absDrift < 60) {
-    stats.good++;
-    showFeedback('👍 GOOD', '#8bc34a');
-  } else if (absDrift < 120) {
+  if (absDrift < 30) { stats.perfect++; showFeedback('✨ PERFECT', '#4caf50'); }
+  else if (absDrift < 60) { stats.good++; showFeedback('👍 GOOD', '#8bc34a'); }
+  else if (absDrift < 120) {
     if (drift < 0) { stats.early++; showFeedback('⏪ EARLY', '#ff9800'); }
     else { stats.late++; showFeedback('⏩ LATE', '#ff5722'); }
-  } else {
-    stats.miss++;
-    showFeedback('❌ MISS', '#f44336');
-  }
+  } else { stats.miss++; showFeedback('❌ MISS', '#f44336'); }
   updateStats();
   updateScore();
 }
@@ -766,7 +1218,7 @@ function processHit(hitTime) {
 function checkMissedHits() {
   const now = audioContext.currentTime;
   for (const eh of expectedHits) {
-    if (!eh.matched && (now - eh.time) > 0.15) {
+    if (!eh.matched && (now - eh.time) > 0.15 + systemLatency/1000) {
       eh.matched = 'missed';
       stats.miss++;
       updateStats();
@@ -839,25 +1291,20 @@ function showTestResult() {
   const score = computeScore();
   const player = players.find(p => p.id === currentPlayerId);
   if (!player) return;
-  
-  const subLabels = {1:'4分',2:'8分',4:'16分'};
-  
-  // 履歴に保存
   const record = {
     date: new Date().toLocaleString('ja-JP'),
-    score, bpm, beats: beatsPerBar,
-    subLabel: subLabels[subdivision] + '音符',
+    score, bpm,
+    presetName: currentPattern.name,
     perfect: stats.perfect, good: stats.good,
     early: stats.early, late: stats.late, miss: stats.miss,
-    avgDrift: driftCount > 0 ? (driftSum/driftCount).toFixed(1) : '--'
+    avgDrift: driftCount > 0 ? (driftSum/driftCount).toFixed(1) : '--',
+    latency: systemLatency.toFixed(1)
   };
   player.history.push(record);
-  if (player.history.length > 50) player.history.shift(); // 最大50件
+  if (player.history.length > 50) player.history.shift();
   saveData();
   renderPlayers();
-  
-  // モーダル表示
-  $('modalPlayerName').textContent = player.name + 'さん';
+  $('modalPlayerName').textContent = player.name + 'さん / ' + currentPattern.name;
   $('modalScore').textContent = score;
   let rank = '';
   if (score >= 95) rank = '🏆 完璧!';
@@ -881,6 +1328,9 @@ function closeModal() {
 
 // ==================== 初期化 ====================
 loadData();
+renderPresetInfo();
+renderBeatLights();
+updateLatencyDisplay();
 </script>
 </body>
 </html>
