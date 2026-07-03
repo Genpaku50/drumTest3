@@ -1,1 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ドラムリズム採点アプリ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 20px;
+    user-select: none;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 20px; }
+  .card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .control-item label { display: block; font-size: 14px; margin-bottom: 6px; opacity: 0.9; }
+  .control-item input, .control-item select {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    font-size: 16px; background: rgba(255,255,255,0.9); color: #333;
+  }
+  .bpm-display {
+    font-size: 48px; font-weight: bold; text-align: center;
+    color: #4fc3f7; margin: 10px 0;
+  }
+  .btn {
+    padding: 14px 24px; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: bold; cursor: pointer;
+    margin: 4px; transition: all 0.2s;
+  }
+  .btn-primary { background: #4caf50; color: #fff; }
+  .btn-primary:active { background: #388e3c; transform: scale(0.98); }
+  .btn-danger { background: #f44336; color: #fff; }
+  .btn-danger:active { background: #d32f2f; transform: scale(0.98); }
+  .btn-secondary { background: #ff9800; color: #fff; }
+  .btn-secondary:active { background: #f57c00; transform: scale(0.98); }
+  .btn-group { text-align: center; }
+  .metronome-visual {
+    height: 80px; display: flex; align-items: center;
+    justify-content: center; gap: 20px; margin: 20px 0;
+  }
+  .beat-light {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: 3px solid rgba(255,255,255,0.3);
+    transition: all 0.1s;
+  }
+  .beat-light.active {
+    background: #ffeb3b; border-color: #fff;
+    box-shadow: 0 0 30px #ffeb3b;
+    transform: scale(1.2);
+  }
+  .beat-light.downbeat.active {
+    background: #ff5722; box-shadow: 0 0 30px #ff5722;
+  }
+  .score-display {
+    text-align: center; padding: 20px;
+    background: rgba(0,0,0,0.3); border-radius: 12px;
+  }
+  .score-number {
+    font-size: 72px; font-weight: bold;
+    background: linear-gradient(45deg, #4fc3f7, #29b6f6);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-top: 16px;
+  }
+  .stat-box {
+    background: rgba(255,255,255,0.1); padding: 12px;
+    border-radius: 8px; text-align: center;
+  }
+  .stat-label { font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
+  .stat-value { font-size: 24px; font-weight: bold; }
+  .stat-value.perfect { color: #4caf50; }
+  .stat-value.good { color: #8bc34a; }
+  .stat-value.early { color: #ff9800; }
+  .stat-value.late { color: #ff5722; }
+  .stat-value.miss { color: #f44336; }
+  .feedback-area {
+    height: 100px; display: flex; align-items: center;
+    justify-content: center; font-size: 36px; font-weight: bold;
+    background: rgba(0,0,0,0.2); border-radius: 12px;
+    transition: all 0.1s;
+  }
+  .timing-graph {
+    height: 60px; background: rgba(0,0,0,0.3);
+    border-radius: 8px; position: relative; overflow: hidden;
+    margin-top: 12px;
+  }
+  .timing-center {
+    position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 2px; background: #4fc3f7;
+  }
+  .timing-hit {
+    position: absolute; top: 50%; width: 8px; height: 8px;
+    border-radius: 50%; transform: translateY(-50%);
+    animation: fadeout 3s forwards;
+  }
+  @keyframes fadeout { to { opacity: 0; } }
+  .status {
+    text-align: center; padding: 10px; font-size: 14px;
+    border-radius: 8px; margin-bottom: 12px;
+  }
+  .status.ready { background: rgba(76,175,80,0.3); }
+  .status.recording { background: rgba(244,67,54,0.3); }
+  .sensitivity-value { font-weight: bold; color: #4fc3f7; }
+  .info-text { font-size: 12px; opacity: 0.7; margin-top: 8px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🥁 ドラムリズム採点</h1>
 
+  <div class="card">
+    <div id="status" class="status ready">🎤 マイク許可待ち → 「マイク開始」を押してください</div>
+    <div class="controls">
+      <div class="control-item">
+        <label>BPM(テンポ)</label>
+        <input type="range" id="bpm" min="60" max="240" value="100" step="1">
+      </div>
+      <div class="control-item">
+        <label>拍子</label>
+        <select id="beats">
+          <option value="4" selected>4/4</option>
+          <option value="3">3/4</option>
+          <option value="2">2/4</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>音符の細かさ</label>
+        <select id="subdivision">
+          <option value="1">4分音符</option>
+          <option value="2" selected>8分音符</option>
+          <option value="4">16分音符</option>
+        </select>
+      </div>
+      <div class="control-item">
+        <label>マイク感度: <span class="sensitivity-value" id="sensVal">30</span></label>
+        <input type="range" id="sensitivity" min="5" max="80" value="30" step="1">
+      </div>
+    </div>
+    <div class="bpm-display" id="bpmDisplay">♩ = 100</div>
+    <div class="metronome-visual" id="metronomeVisual"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="micBtn">🎤 マイク開始</button>
+      <button class="btn btn-secondary" id="startBtn" disabled>▶️ 練習スタート</button>
+      <button class="btn btn-danger" id="stopBtn" disabled>⏹️ 停止</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="score-display">
+      <div style="font-size:14px; opacity:0.8;">総合スコア</div>
+      <div class="score-number" id="score">--</div>
+      <div id="rank" style="font-size:24px; font-weight:bold;">練習を始めましょう</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Perfect</div>
+        <div class="stat-value perfect" id="perfectCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Good</div>
+        <div class="stat-value good" id="goodCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Miss</div>
+        <div class="stat-value miss" id="missCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Early(早い)</div>
+        <div class="stat-value early" id="earlyCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Late(遅い)</div>
+        <div class="stat-value late" id="lateCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">平均ズレ</div>
+        <div class="stat-value" id="avgDrift">-- ms</div>
+      </div>
+    </div>
+    <div style="margin-top: 16px;">
+      <div style="font-size:12px; opacity:0.8;">タイミング分布(左=早い / 中央=正確 / 右=遅い)</div>
+      <div class="timing-graph" id="timingGraph">
+        <div class="timing-center"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="feedback-area" id="feedback">🎵</div>
+    <div class="info-text">
+      判定基準:Perfect ±30ms / Good ±60ms / Miss ±120ms超<br>
+      練習パッドやスネアをiPadに近づけて叩いてください
+    </div>
+  </div>
+</div>
+
+<script>
+let audioContext, analyser, mediaStream, scriptProcessor;
+let isRecording = false, isPlaying = false;
+let bpm = 100, beatsPerBar = 4, subdivision = 2;
+let sensitivity = 30;
+let nextBeatTime = 0, currentBeat = 0;
+let expectedHits = [];
+let hits = [];
+let stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
+let driftSum = 0, driftCount = 0;
+let lastOnsetTime = 0;
+let schedulerTimer = null;
+
+const $ = id => document.getElementById(id);
+
+// BPM/設定変更
+$('bpm').addEventListener('input', e => {
+  bpm = parseInt(e.target.value);
+  $('bpmDisplay').textContent = `♩ = ${bpm}`;
+});
+$('beats').addEventListener('change', e => {
+  beatsPerBar = parseInt(e.target.value);
+  renderBeatLights();
+});
+$('subdivision').addEventListener('change', e => {
+  subdivision = parseInt(e.target.value);
+});
+$('sensitivity').addEventListener('input', e => {
+  sensitivity = parseInt(e.target.value);
+  $('sensVal').textContent = sensitivity;
+});
+
+function renderBeatLights() {
+  const container = $('metronomeVisual');
+  container.innerHTML = '';
+  for (let i = 0; i < beatsPerBar; i++) {
+    const light = document.createElement('div');
+    light.className = 'beat-light' + (i === 0 ? ' downbeat' : '');
+    light.id = `beat${i}`;
+    container.appendChild(light);
+  }
+}
+renderBeatLights();
+
+// マイク開始
+$('micBtn').addEventListener('click', async () => {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+
+    // 音量解析ループでオンセット検出
+    const buffer = new Uint8Array(analyser.fftSize);
+    let prevLevel = 0;
+    function detectOnset() {
+      analyser.getByteTimeDomainData(buffer);
+      let sum = 0;
+      for (let i = 0; i < buffer.length; i++) {
+        const v = (buffer[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / buffer.length) * 100;
+      const delta = rms - prevLevel;
+      const now = audioContext.currentTime;
+      // オンセット判定:急激な音量上昇+前回から100ms以上経過
+      if (delta > sensitivity / 10 && rms > sensitivity / 10 && (now - lastOnsetTime) > 0.1) {
+        lastOnsetTime = now;
+        if (isPlaying) processHit(now);
+      }
+      prevLevel = rms;
+      requestAnimationFrame(detectOnset);
+    }
+    detectOnset();
+
+    $('status').textContent = '✅ マイク準備完了 → 「練習スタート」を押してください';
+    $('micBtn').disabled = true;
+    $('startBtn').disabled = false;
+  } catch (e) {
+    $('status').textContent = '❌ マイクエラー: ' + e.message;
+  }
+});
+
+// 練習スタート
+$('startBtn').addEventListener('click', () => {
+  isPlaying = true;
+  currentBeat = 0;
+  hits = [];
+  expectedHits = [];
+  stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
+  driftSum = 0; driftCount = 0;
+  updateStats();
+  $('timingGraph').innerHTML = '<div class="timing-center"></div>';
+  nextBeatTime = audioContext.currentTime + 0.1;
+  $('status').textContent = '🔴 練習中...';
+  $('status').className = 'status recording';
+  $('startBtn').disabled = true;
+  $('stopBtn').disabled = false;
+  scheduler();
+});
+
+// 停止
+$('stopBtn').addEventListener('click', () => {
+  isPlaying = false;
+  clearTimeout(schedulerTimer);
+  $('status').textContent = '⏸️ 停止しました。もう一度スタートで再開';
+  $('status').className = 'status ready';
+  $('startBtn').disabled = false;
+  $('stopBtn').disabled = true;
+  finalizePendingHits();
+  updateScore();
+});
+
+// メトロノームスケジューラ
+function scheduler() {
+  if (!isPlaying) return;
+  const secondsPerBeat = 60.0 / bpm;
+  const subInterval = secondsPerBeat / subdivision;
+  while (nextBeatTime < audioContext.currentTime + 0.1) {
+    scheduleClick(nextBeatTime, currentBeat);
+    expectedHits.push({ time: nextBeatTime, matched: false, index: expectedHits.length });
+    // ビジュアル
+    const beatInBar = Math.floor(currentBeat / subdivision) % beatsPerBar;
+    const isSubMain = currentBeat % subdivision === 0;
+    if (isSubMain) {
+      setTimeout(() => flashBeat(beatInBar), (nextBeatTime - audioContext.currentTime) * 1000);
+    }
+    currentBeat++;
+    nextBeatTime += subInterval;
+    // 古い期待ヒットのミス判定
+    checkMissedHits();
+  }
+  schedulerTimer = setTimeout(scheduler, 25);
+}
+
+function scheduleClick(time, beatIndex) {
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const isDown = (beatIndex % (subdivision * beatsPerBar)) === 0;
+  const isMainBeat = beatIndex % subdivision === 0;
+  osc.frequency.value = isDown ? 1200 : (isMainBeat ? 800 : 500);
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(isMainBeat ? 0.5 : 0.2, time + 0.001);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  osc.connect(gain).connect(audioContext.destination);
+  osc.start(time); osc.stop(time + 0.05);
+}
+
+function flashBeat(index) {
+  const el = $('beat' + index);
+  if (!el) return;
+  el.classList.add('active');
+  setTimeout(() => el.classList.remove('active'), 100);
+}
+
+// 叩いた瞬間の処理
+function processHit(hitTime) {
+  // 最も近い期待ヒットを探す
+  let closest = null, minDiff = Infinity;
+  for (const eh of expectedHits) {
+    if (eh.matched) continue;
+    const diff = Math.abs(eh.time - hitTime);
+    if (diff < minDiff) { minDiff = diff; closest = eh; }
+  }
+  if (!closest || minDiff > 0.2) {
+    // 対応する期待ヒットなし(余計な音)
+    showFeedback('❓ Extra', '#9e9e9e');
+    return;
+  }
+  closest.matched = true;
+  const drift = (hitTime - closest.time) * 1000; // ms
+  driftSum += drift; driftCount++;
+  addTimingMark(drift);
+
+  const absDrift = Math.abs(drift);
+  if (absDrift < 30) {
+    stats.perfect++;
+    showFeedback('✨ PERFECT', '#4caf50');
+  } else if (absDrift < 60) {
+    stats.good++;
+    showFeedback('👍 GOOD', '#8bc34a');
+  } else if (absDrift < 120) {
+    if (drift < 0) { stats.early++; showFeedback('⏪ EARLY', '#ff9800'); }
+    else { stats.late++; showFeedback('⏩ LATE', '#ff5722'); }
+  } else {
+    stats.miss++;
+    showFeedback('❌ MISS', '#f44336');
+  }
+  updateStats();
+  updateScore();
+}
+
+// 期待ヒットの中で時間が過ぎたものをミスに
+function checkMissedHits() {
+  const now = audioContext.currentTime;
+  for (const eh of expectedHits) {
+    if (!eh.matched && (now - eh.time) > 0.15) {
+      eh.matched = 'missed';
+      stats.miss++;
+      updateStats();
+    }
+  }
+}
+
+function finalizePendingHits() {
+  for (const eh of expectedHits) {
+    if (!eh.matched) { eh.matched = 'missed'; stats.miss++; }
+  }
+  updateStats();
+}
+
+function showFeedback(text, color) {
+  const fb = $('feedback');
+  fb.textContent = text;
+  fb.style.color = color;
+  fb.style.transform = 'scale(1.1)';
+  setTimeout(() => { fb.style.transform = 'scale(1)'; }, 100);
+}
+
+function addTimingMark(driftMs) {
+  const graph = $('timingGraph');
+  const mark = document.createElement('div');
+  mark.className = 'timing-hit';
+  // -150ms〜+150msを0〜100%にマップ
+  const pos = 50 + (driftMs / 150) * 50;
+  mark.style.left = Math.max(0, Math.min(100, pos)) + '%';
+  const absDrift = Math.abs(driftMs);
+  mark.style.background = absDrift < 30 ? '#4caf50' :
+                          absDrift < 60 ? '#8bc34a' :
+                          absDrift < 120 ? '#ff9800' : '#f44336';
+  graph.appendChild(mark);
+  setTimeout(() => mark.remove(), 3000);
+}
+
+function updateStats() {
+  $('perfectCount').textContent = stats.perfect;
+  $('goodCount').textContent = stats.good;
+  $('earlyCount').textContent = stats.early;
+  $('lateCount').textContent = stats.late;
+  $('missCount').textContent = stats.miss;
+  $('avgDrift').textContent = driftCount > 0 ? (driftSum / driftCount).toFixed(1) + ' ms' : '-- ms';
+}
+
+function updateScore() {
+  const total = stats.perfect + stats.good + stats.early + stats.late + stats.miss;
+  if (total === 0) return;
+  const score = Math.round(
+    (stats.perfect * 100 + stats.good * 80 + stats.early * 50 + stats.late * 50) / total
+  );
+  $('score').textContent = score;
+  let rank = '';
+  if (score >= 95) rank = '🏆 完璧!';
+  else if (score >= 85) rank = '🌟 素晴らしい!';
+  else if (score >= 70) rank = '😊 良い感じ';
+  else if (score >= 50) rank = '💪 練習中';
+  else rank = '🔄 もう一度';
+  $('rank').textContent = rank;
+}
+</script>
+</body>
+</html>
