@@ -193,6 +193,7 @@
     text-align: center; border: 1px solid rgba(255,255,255,0.3);
   }
   .modal-title { font-size: 24px; margin-bottom: 16px; }
+  .modal-body { font-size: 14px; margin-bottom: 20px; text-align: left; white-space: pre-line; }
   .modal-score {
     font-size: 72px; font-weight: bold;
     background: linear-gradient(45deg, #4fc3f7, #29b6f6);
@@ -218,9 +219,7 @@
     font-size: 18px; font-weight: bold; color: #4fc3f7;
     margin-bottom: 4px;
   }
-  .preset-desc {
-    font-size: 12px; opacity: 0.8; margin-bottom: 8px;
-  }
+  .preset-desc { font-size: 12px; opacity: 0.8; margin-bottom: 8px; }
   .pattern-display {
     background: rgba(0,0,0,0.4); border-radius: 8px;
     padding: 12px; margin-top: 8px;
@@ -240,19 +239,14 @@
     transition: all 0.15s;
   }
   .pattern-cell.hit { background: rgba(79,195,247,0.3); }
-  .pattern-cell.accent {
-    background: rgba(255,87,34,0.4);
-    color: #fff;
-  }
+  .pattern-cell.accent { background: rgba(255,87,34,0.4); color: #fff; }
   .pattern-cell.rest { opacity: 0.3; }
   .pattern-cell.current {
     border-color: #ffeb3b;
     transform: scale(1.15);
     box-shadow: 0 0 15px rgba(255,235,59,0.6);
   }
-  .pattern-hand {
-    font-size: 14px; font-weight: bold;
-  }
+  .pattern-hand { font-size: 14px; font-weight: bold; }
   .pattern-hand.R { color: #4fc3f7; }
   .pattern-hand.L { color: #ff9800; }
   .pattern-beat { font-size: 10px; opacity: 0.7; margin-top: 2px; }
@@ -276,21 +270,14 @@
   }
   .custom-cell.on { background: rgba(79,195,247,0.4); }
   .custom-cell.accent { background: rgba(255,87,34,0.5); }
-  .custom-controls {
-    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
-  }
+  .custom-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .calib-box {
     background: rgba(0,0,0,0.3); border-radius: 10px;
     padding: 12px; margin-top: 12px;
     border-left: 4px solid #ffc107;
   }
-  .calib-status {
-    font-size: 14px; margin-bottom: 8px;
-  }
-  .calib-value {
-    font-size: 24px; font-weight: bold;
-    color: #4fc3f7;
-  }
+  .calib-status { font-size: 14px; margin-bottom: 8px; }
+  .calib-value { font-size: 24px; font-weight: bold; color: #4fc3f7; }
   .calib-value.uncalibrated { color: #ff9800; }
 </style>
 </head>
@@ -403,9 +390,7 @@
     </div>
 
     <div class="calib-box">
-      <div class="calib-status">
-        🎯 <strong>環境補正(キャリブレーション)</strong>
-      </div>
+      <div class="calib-status">🎯 <strong>環境補正(キャリブレーション)</strong></div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
         <div>
           <div style="font-size:12px; opacity:0.8;">現在の補正値</div>
@@ -414,7 +399,7 @@
         <button class="btn btn-outline btn-small" id="calibrateBtn" disabled>🎯 自動キャリブレーション実行</button>
       </div>
       <div style="font-size:11px; opacity:0.7; margin-top:8px;">
-        練習開始前に1回実行してください。iPadを固定し、静かな環境で測定します。
+        練習開始前に1回実行してください。iPad/iPhoneを固定し、静かな環境で測定します。
       </div>
     </div>
 
@@ -455,6 +440,32 @@
   </div>
 </div>
 
+<!-- キャリブレーション確認モーダル(独自実装) -->
+<div class="modal-overlay" id="calibConfirmModal">
+  <div class="modal">
+    <div class="modal-title">🎯 自動キャリブレーション</div>
+    <div class="modal-body">📱 端末を叩く場所(スネアの近く)に固定してください
+🔊 内蔵スピーカーで音を10回鳴らします
+🎤 マイクで音を拾って往復遅延を測定します
+
+⚠️ 測定中は静かに(絶対に叩かないでください)</div>
+    <div>
+      <button class="btn btn-primary" id="calibConfirmYes">✅ 開始する</button>
+      <button class="btn btn-outline" id="calibConfirmNo">❌ キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- キャリブレーション結果モーダル -->
+<div class="modal-overlay" id="calibResultModal">
+  <div class="modal">
+    <div class="modal-title" id="calibResultTitle">✅ 完了</div>
+    <div class="modal-body" id="calibResultBody">--</div>
+    <button class="btn btn-primary" onclick="closeCalibResultModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- テスト結果モーダル -->
 <div class="modal-overlay" id="resultModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">🎯 テスト終了!</div>
@@ -503,10 +514,8 @@ const PRESETS = {
     name: '三コ打ち(RRRLLL)', desc: '真ん中の音はバックフィンガーだけで叩く',
     subdivision: 3, beatsPerBar: 4,
     pattern: [
-      {hand:'R'},{hand:'R'},{hand:'R'},
-      {hand:'L'},{hand:'L'},{hand:'L'},
-      {hand:'R'},{hand:'R'},{hand:'R'},
-      {hand:'L'},{hand:'L'},{hand:'L'}
+      {hand:'R'},{hand:'R'},{hand:'R'},{hand:'L'},{hand:'L'},{hand:'L'},
+      {hand:'R'},{hand:'R'},{hand:'R'},{hand:'L'},{hand:'L'},{hand:'L'}
     ]
   },
   paradiddle1: {
@@ -603,7 +612,7 @@ let customPattern = {
 
 // ==================== グローバル状態 ====================
 let audioContext, analyser, mediaStream;
-let isRecording = false, isPlaying = false, isCountingIn = false;
+let isPlaying = false, isCountingIn = false;
 let bpm = 100, sensitivity = 30;
 let currentMode = 'practice';
 let currentPresetKey = 'eighth';
@@ -624,9 +633,25 @@ let systemLatency = 0;
 let isCalibrating = false;
 let calibrationSamples = [];
 let calibrationClickTimes = [];
+let calibIntervalId = null;
+let calibClickCount = 0;
 
 const $ = id => document.getElementById(id);
 const STORAGE_KEY = 'drumScoreApp_v3';
+
+// AudioContextを確実に復帰させるヘルパー
+async function ensureAudioContext() {
+  if (!audioContext) return false;
+  if (audioContext.state === 'suspended') {
+    try {
+      await audioContext.resume();
+    } catch(e) {
+      console.warn('AudioContext resume failed:', e);
+      return false;
+    }
+  }
+  return audioContext.state === 'running';
+}
 
 // ==================== ストレージ ====================
 function loadData() {
@@ -838,7 +863,6 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
-// ==================== 設定 ====================
 $('bpm').addEventListener('input', e => {
   bpm = parseInt(e.target.value);
   $('bpmDisplay').textContent = `♩ = ${bpm}`;
@@ -865,6 +889,13 @@ function renderBeatLights() {
 $('micBtn').addEventListener('click', async () => {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // 即座に一度小さな音を鳴らして AudioContext をアンロック
+    const silentOsc = audioContext.createOscillator();
+    const silentGain = audioContext.createGain();
+    silentGain.gain.value = 0.001;
+    silentOsc.connect(silentGain).connect(audioContext.destination);
+    silentOsc.start(); silentOsc.stop(audioContext.currentTime + 0.01);
+    
     mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
@@ -902,7 +933,7 @@ $('micBtn').addEventListener('click', async () => {
   }
 });
 
-// ==================== キャリブレーション ====================
+// ==================== キャリブレーション(独自モーダル + 逐次スケジュール) ====================
 function updateLatencyDisplay() {
   const disp = $('latencyDisplay');
   if (systemLatency === 0) {
@@ -914,23 +945,31 @@ function updateLatencyDisplay() {
   }
 }
 
-$('calibrateBtn').addEventListener('click', async () => {
+// キャリブレーションボタン → モーダルを開く
+$('calibrateBtn').addEventListener('click', () => {
   if (isPlaying || isCountingIn) return alert('練習を停止してから実行してください');
-  if (!confirm('🎯 自動キャリブレーションを開始します\n\n' +
-               '📱 iPadを叩く場所(スネアの近く)に固定してください\n' +
-               '🔊 内蔵スピーカーで音を10回鳴らします\n' +
-               '🎤 マイクで音を拾って往復遅延を測定します\n\n' +
-               '⚠️ 測定中は静かに(絶対に叩かないでください)\n\n' +
-               '開始しますか?')) return;
+  $('calibConfirmModal').classList.add('active');
+});
+
+$('calibConfirmNo').addEventListener('click', () => {
+  $('calibConfirmModal').classList.remove('active');
+});
+
+// 「開始する」を押したときの処理
+$('calibConfirmYes').addEventListener('click', async () => {
+  $('calibConfirmModal').classList.remove('active');
   
-  // 🆕 iOS Safari対策:confirm後にAudioContextを再開
-  if (audioContext.state === 'suspended') {
-    try { await audioContext.resume(); } catch(e) { console.warn('resume failed', e); }
+  // AudioContextを確実に再開
+  const ok = await ensureAudioContext();
+  if (!ok) {
+    alert('❌ 音声の再開に失敗しました。ページを再読み込みしてください。');
+    return;
   }
   
   isCalibrating = true;
   calibrationSamples = [];
   calibrationClickTimes = [];
+  calibClickCount = 0;
   $('calibrateBtn').disabled = true;
   $('startBtn').disabled = true;
   $('micBtn').disabled = true;
@@ -938,35 +977,45 @@ $('calibrateBtn').addEventListener('click', async () => {
   $('status').className = 'status calibrating';
   
   const NUM_CLICKS = 10;
-  const CLICK_INTERVAL = 0.8;
-  const startTime = audioContext.currentTime + 0.8;
+  const CLICK_INTERVAL_MS = 800;
   
-  for (let i = 0; i < NUM_CLICKS; i++) {
-    const t = startTime + i * CLICK_INTERVAL;
-    calibrationClickTimes.push(t);
-    scheduleCalibrationClick(t);
-  }
-  
-  for (let i = 0; i < NUM_CLICKS; i++) {
-    const delay = (startTime + i * CLICK_INTERVAL - audioContext.currentTime) * 1000;
-    setTimeout(() => {
-      $('status').textContent = `🎯 測定中... (${i+1}/${NUM_CLICKS})`;
-    }, delay);
-  }
-  
-  const totalDuration = (0.8 + NUM_CLICKS * CLICK_INTERVAL + 1) * 1000;
-  setTimeout(() => finalizeCalibration(), totalDuration);
+  // 最初のクリックを800ms後に鳴らす
+  setTimeout(() => playNextCalibClick(NUM_CLICKS, CLICK_INTERVAL_MS), 800);
 });
 
+function playNextCalibClick(total, intervalMs) {
+  if (calibClickCount >= total) {
+    // 全部鳴らし終わったら1秒待って結果集計
+    setTimeout(() => finalizeCalibration(), 1000);
+    return;
+  }
+  
+  // 直近のタイミング(50ms先)で音をスケジュール
+  const t = audioContext.currentTime + 0.05;
+  calibrationClickTimes.push(t);
+  scheduleCalibrationClick(t);
+  calibClickCount++;
+  $('status').textContent = `🎯 測定中... (${calibClickCount}/${total})`;
+  
+  // 次のクリックを予約
+  setTimeout(() => playNextCalibClick(total, intervalMs), intervalMs);
+}
+
 function scheduleCalibrationClick(time) {
-  const osc = audioContext.createOscillator();
+  // 2つの周波数を重ねて確実に聞こえるようにする
+  const osc1 = audioContext.createOscillator();
+  const osc2 = audioContext.createOscillator();
   const gain = audioContext.createGain();
-  osc.frequency.value = 2000;
+  osc1.frequency.value = 1000;
+  osc2.frequency.value = 1500;
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.7, time + 0.001);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-  osc.connect(gain).connect(audioContext.destination);
-  osc.start(time); osc.stop(time + 0.08);
+  gain.gain.linearRampToValueAtTime(0.9, time + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(audioContext.destination);
+  osc1.start(time); osc1.stop(time + 0.12);
+  osc2.start(time); osc2.stop(time + 0.12);
 }
 
 function recordCalibrationSample(detectedTime) {
@@ -987,16 +1036,15 @@ function finalizeCalibration() {
   isCalibrating = false;
   $('calibrateBtn').disabled = false;
   $('startBtn').disabled = false;
+  $('status').textContent = '';
+  $('status').className = 'status ready';
   
-  if (calibrationSamples.length < 5) {
+  if (calibrationSamples.length < 3) {
     $('status').textContent = '❌ 測定失敗(サンプル不足)';
-    $('status').className = 'status ready';
-    alert(`測定サンプルが少なすぎます(${calibrationSamples.length}個/10個中)\n\n` +
-          '対策:\n' +
-          '・マイク感度を上げる(現在: ' + sensitivity + ')\n' +
-          '・iPadの音量を上げる\n' +
-          '・静かな環境で実行する\n' +
-          '・iPadをスネアの近くに置く');
+    showCalibResult(
+      '❌ 測定失敗',
+      `測定サンプルが少なすぎます(${calibrationSamples.length}個/10個中)\n\n対策:\n・マイク感度を上げる(現在: ${sensitivity})\n・端末の音量を上げる\n・静かな環境で実行する\n・端末をスネアの近くに置く`
+    );
     return;
   }
   
@@ -1020,27 +1068,34 @@ function finalizeCalibration() {
   else if (stdDev < 40) quality = '😊 まあまあの測定';
   else quality = '⚠️ 測定にばらつき有り(環境ノイズが多い可能性)';
   
-  alert(`✅ キャリブレーション完了!\n\n` +
-        `📊 測定結果:\n` +
-        `・有効サンプル: ${calibrationSamples.length}/10\n` +
-        `・中央値: ${median.toFixed(1)} ms(採用)\n` +
-        `・平均値: ${avg.toFixed(1)} ms\n` +
-        `・最小/最大: ${min.toFixed(1)} / ${max.toFixed(1)} ms\n` +
-        `・標準偏差: ${stdDev.toFixed(1)} ms\n\n` +
-        `${quality}\n\n` +
-        `以降、この値でスコアを自動補正します。`);
+  showCalibResult(
+    '✅ キャリブレーション完了',
+    `📊 測定結果:\n・有効サンプル: ${calibrationSamples.length}/10\n・中央値: ${median.toFixed(1)} ms(採用)\n・平均値: ${avg.toFixed(1)} ms\n・最小/最大: ${min.toFixed(1)} / ${max.toFixed(1)} ms\n・標準偏差: ${stdDev.toFixed(1)} ms\n\n${quality}\n\n以降、この値でスコアを自動補正します。`
+  );
+}
+
+function showCalibResult(title, body) {
+  $('calibResultTitle').textContent = title;
+  $('calibResultBody').textContent = body;
+  $('calibResultModal').classList.add('active');
+}
+
+function closeCalibResultModal() {
+  $('calibResultModal').classList.remove('active');
 }
 
 // ==================== スタート ====================
-$('startBtn').addEventListener('click', () => {
+$('startBtn').addEventListener('click', async () => {
   if (currentMode === 'test' && !currentPlayerId) {
     return alert('テストモードではプレイヤーを選択してください');
   }
   if (systemLatency === 0) {
-    if (!confirm('⚠️ まだキャリブレーションが実行されていません\n\n' +
-                 '補正なしで進めますか?\n' +
-                 '(先にキャリブレーションを推奨します)')) return;
+    if (!confirm('⚠️ まだキャリブレーションが実行されていません\n\n補正なしで進めますか?\n(先にキャリブレーションを推奨します)')) return;
   }
+  
+  // AudioContextを確実に再開
+  await ensureAudioContext();
+  
   currentPatternIndex = 0;
   barsCompleted = 0;
   expectedHits = [];
@@ -1058,7 +1113,6 @@ $('startBtn').addEventListener('click', () => {
   startCountIn();
 });
 
-// ==================== カウントイン ====================
 function startCountIn() {
   isCountingIn = true;
   $('status').textContent = '🎬 カウントイン中... 準備!';
@@ -1092,7 +1146,6 @@ function startCountIn() {
   }, (mainStart - audioContext.currentTime) * 1000);
 }
 
-// ==================== 停止 ====================
 $('stopBtn').addEventListener('click', () => stopPlayback(false));
 
 function stopPlayback(finished) {
@@ -1113,7 +1166,6 @@ function stopPlayback(finished) {
   }
 }
 
-// ==================== スケジューラ ====================
 function scheduler() {
   if (!isPlaying) return;
   const secondsPerBeat = 60.0 / bpm;
@@ -1186,7 +1238,6 @@ function flashBeat(index) {
   setTimeout(() => el.classList.remove('active'), 100);
 }
 
-// ==================== ヒット判定(補正込み) ====================
 function processHit(hitTime) {
   let closest = null, minDiff = Infinity;
   for (const eh of expectedHits) {
@@ -1284,7 +1335,6 @@ function updateScore() {
   $('rank').textContent = rank;
 }
 
-// ==================== テスト結果 ====================
 function showTestResult() {
   const score = computeScore();
   const player = players.find(p => p.id === currentPlayerId);
@@ -1324,7 +1374,6 @@ function closeModal() {
   $('resultModal').classList.remove('active');
 }
 
-// ==================== 初期化 ====================
 loadData();
 renderPresetInfo();
 renderBeatLights();
