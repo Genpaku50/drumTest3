@@ -381,8 +381,8 @@
         <input type="range" id="sensitivity" min="5" max="80" value="30" step="1">
       </div>
       <div class="control-item">
-        <label>🔊 音量: <span class="sensitivity-value" id="volVal">200</span>%</label>
-        <input type="range" id="volume" min="10" max="300" value="200" step="10">
+        <label>🔊 音量: <span class="sensitivity-value" id="volVal">300</span>%</label>
+        <input type="range" id="volume" min="10" max="500" value="300" step="10">
       </div>
       <div class="control-item">
         <label>🧠 NMA補正(全員共通): <span class="sensitivity-value" id="nmaVal">-30</span> ms</label>
@@ -452,11 +452,6 @@
     </div>
   </div>
 </div>
-
-<!-- iOS音量制限回避用ダミーAudio -->
-<audio id="dummyAudio" preload="auto" playsinline loop style="display:none;">
-  data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBAAAAABAAEAgD4AAIA+AAABAAgAZGF0YTgAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIA=
-</audio>
 
 <div class="modal-overlay" id="calibConfirmModal">
   <div class="modal">
@@ -625,10 +620,10 @@ let customPattern = {
 };
 
 let audioContext, analyser, mediaStream;
-let masterGain, compressor;
+let masterGain;
 let isPlaying = false, isCountingIn = false;
 let bpm = 100, sensitivity = 30;
-let volumeLevel = 2.0;
+let volumeLevel = 3.0; // 初期300%
 let nmaOffset = -30;
 let currentMode = 'practice';
 let currentPresetKey = 'eighth';
@@ -652,7 +647,7 @@ let calibrationClickTimes = [];
 let calibClickCount = 0;
 
 const $ = id => document.getElementById(id);
-const STORAGE_KEY = 'drumScoreApp_v7';
+const STORAGE_KEY = 'drumScoreApp_v8';
 
 async function ensureAudioContext() {
   if (!audioContext) return false;
@@ -909,33 +904,15 @@ function renderBeatLights() {
 
 $('micBtn').addEventListener('click', async () => {
   try {
-    // 🆕 iOS音量制限回避:ダミーAudio再生
-    const dummy = $('dummyAudio');
-    dummy.volume = 0.01;
-    try { await dummy.play(); } catch(e) { console.warn('dummy play failed', e); }
-    
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // 🆕 マスターゲイン + コンプレッサー(音量最大化)
     masterGain = audioContext.createGain();
     masterGain.gain.value = volumeLevel;
-    
-    compressor = audioContext.createDynamicsCompressor();
-    compressor.threshold.value = -24;
-    compressor.knee.value = 30;
-    compressor.ratio.value = 12;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.25;
-    
-    masterGain.connect(compressor).connect(audioContext.destination);
-    
-    // アンロック用の無音
+    masterGain.connect(audioContext.destination);
     const silentOsc = audioContext.createOscillator();
     const silentGain = audioContext.createGain();
     silentGain.gain.value = 0.001;
     silentOsc.connect(silentGain).connect(audioContext.destination);
     silentOsc.start(); silentOsc.stop(audioContext.currentTime + 0.01);
-    
     mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
@@ -1036,51 +1013,21 @@ function playNextCalibClick(total, intervalMs) {
   setTimeout(() => playNextCalibClick(total, intervalMs), intervalMs);
 }
 
-// 🆕 音量最大化:矩形波+倍音+ノイズ+ソフトクリップ
+// シンプル+大音量版:2周波数を重ねて音量3倍、長さ延長
 function scheduleCalibrationClick(time) {
-  const freqs = [1000, 2000, 3000];
-  
-  // ノイズ成分(カチッという音)
-  const noiseBufferSize = Math.floor(audioContext.sampleRate * 0.03);
-  const noiseBuffer = audioContext.createBuffer(1, noiseBufferSize, audioContext.sampleRate);
-  const noiseData = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < noiseBufferSize; i++) {
-    noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseBufferSize);
-  }
-  const noiseSource = audioContext.createBufferSource();
-  noiseSource.buffer = noiseBuffer;
-  
-  // ソフトクリッピング(歪ませて音量感UP)
-  const shaper = audioContext.createWaveShaper();
-  const curve = new Float32Array(256);
-  for (let i = 0; i < 256; i++) {
-    const x = (i - 128) / 128;
-    curve[i] = Math.tanh(x * 3);
-  }
-  shaper.curve = curve;
-  
+  const osc1 = audioContext.createOscillator();
+  const osc2 = audioContext.createOscillator();
   const gain = audioContext.createGain();
+  osc1.frequency.value = 1000;
+  osc2.frequency.value = 1500;
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(1.0, time + 0.002);
+  gain.gain.linearRampToValueAtTime(3.0, time + 0.002); // 3倍音量
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-  
-  freqs.forEach((f, idx) => {
-    const osc = audioContext.createOscillator();
-    osc.type = idx === 0 ? 'square' : 'sine';
-    osc.frequency.value = f;
-    const oscGain = audioContext.createGain();
-    oscGain.gain.value = idx === 0 ? 0.6 : (idx === 1 ? 0.3 : 0.15);
-    osc.connect(oscGain).connect(shaper);
-    osc.start(time);
-    osc.stop(time + 0.15);
-  });
-  
-  const noiseGain = audioContext.createGain();
-  noiseGain.gain.value = 0.5;
-  noiseSource.connect(noiseGain).connect(shaper);
-  noiseSource.start(time);
-  
-  shaper.connect(gain).connect(masterGain);
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(masterGain);
+  osc1.start(time); osc1.stop(time + 0.15);
+  osc2.start(time); osc2.stop(time + 0.15);
 }
 
 function recordCalibrationSample(detectedTime) {
@@ -1266,54 +1213,17 @@ function scheduler() {
   schedulerTimer = setTimeout(scheduler, 25);
 }
 
-// 🆕 音量最大化:矩形波+倍音+ノイズ+ソフトクリップ
+// シンプル+大音量版:元の実装に音量を3倍にして長さを延長
 function scheduleClick(time, type) {
-  const freqs = type === 'downbeat' ? [1200, 2400, 3600] :
-                type === 'main' ? [800, 1600, 2400] :
-                [500, 1000, 1500];
-  const peakVol = type === 'sub' ? 0.8 : 1.0;
-  
-  // ノイズ成分
-  const noiseBufferSize = Math.floor(audioContext.sampleRate * 0.02);
-  const noiseBuffer = audioContext.createBuffer(1, noiseBufferSize, audioContext.sampleRate);
-  const noiseData = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < noiseBufferSize; i++) {
-    noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseBufferSize);
-  }
-  const noiseSource = audioContext.createBufferSource();
-  noiseSource.buffer = noiseBuffer;
-  
-  // ソフトクリッピング
-  const shaper = audioContext.createWaveShaper();
-  const curve = new Float32Array(256);
-  for (let i = 0; i < 256; i++) {
-    const x = (i - 128) / 128;
-    curve[i] = Math.tanh(x * 3);
-  }
-  shaper.curve = curve;
-  
+  const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
+  osc.frequency.value = type === 'downbeat' ? 1200 : (type === 'main' ? 800 : 500);
+  const peakVol = type === 'sub' ? 1.5 : 3.0; // 音量3倍(以前1.0→3.0)
   gain.gain.setValueAtTime(0, time);
   gain.gain.linearRampToValueAtTime(peakVol, time + 0.002);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-  
-  freqs.forEach((f, idx) => {
-    const osc = audioContext.createOscillator();
-    osc.type = idx === 0 ? 'square' : 'sine';
-    osc.frequency.value = f;
-    const oscGain = audioContext.createGain();
-    oscGain.gain.value = idx === 0 ? 0.6 : (idx === 1 ? 0.3 : 0.15);
-    osc.connect(oscGain).connect(shaper);
-    osc.start(time);
-    osc.stop(time + 0.1);
-  });
-  
-  const noiseGain = audioContext.createGain();
-  noiseGain.gain.value = 0.4;
-  noiseSource.connect(noiseGain).connect(shaper);
-  noiseSource.start(time);
-  
-  shaper.connect(gain).connect(masterGain);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12); // 長さも延長
+  osc.connect(gain).connect(masterGain);
+  osc.start(time); osc.stop(time + 0.12);
 }
 
 function flashBeat(index) {
