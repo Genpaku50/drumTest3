@@ -136,6 +136,7 @@
   .status.recording { background: rgba(244,67,54,0.3); }
   .status.countin { background: rgba(156,39,176,0.3); }
   .status.calibrating { background: rgba(255,193,7,0.3); }
+  .status.learning { background: rgba(0,188,212,0.3); }
   .sensitivity-value { font-weight: bold; color: #4fc3f7; }
   .info-text { font-size: 12px; opacity: 0.7; margin-top: 8px; text-align: center; }
   .player-list {
@@ -279,6 +280,14 @@
   .calib-status { font-size: 14px; margin-bottom: 8px; }
   .calib-value { font-size: 24px; font-weight: bold; color: #4fc3f7; }
   .calib-value.uncalibrated { color: #ff9800; }
+  .calib-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .learned-offset {
+    background: rgba(0,188,212,0.15); border-radius: 8px;
+    padding: 8px 12px; margin-top: 8px; font-size: 13px;
+    border-left: 3px solid #00bcd4;
+    display: none;
+  }
+  .learned-offset.active { display: block; }
 </style>
 </head>
 <body>
@@ -379,6 +388,14 @@
         <label>マイク感度: <span class="sensitivity-value" id="sensVal">30</span></label>
         <input type="range" id="sensitivity" min="5" max="80" value="30" step="1">
       </div>
+      <div class="control-item">
+        <label>🔊 音量: <span class="sensitivity-value" id="volVal">100</span>%</label>
+        <input type="range" id="volume" min="10" max="100" value="100" step="5">
+      </div>
+      <div class="control-item">
+        <label>🧠 NMA補正: <span class="sensitivity-value" id="nmaVal">40</span> ms</label>
+        <input type="range" id="nmaOffset" min="0" max="80" value="40" step="5">
+      </div>
     </div>
     <div class="bpm-display" id="bpmDisplay">♩ = 100</div>
     <div class="metronome-visual" id="metronomeVisual"></div>
@@ -391,15 +408,22 @@
 
     <div class="calib-box">
       <div class="calib-status">🎯 <strong>環境補正(キャリブレーション)</strong></div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
         <div>
           <div style="font-size:12px; opacity:0.8;">現在の補正値</div>
           <div class="calib-value uncalibrated" id="latencyDisplay">未測定</div>
         </div>
-        <button class="btn btn-outline btn-small" id="calibrateBtn" disabled>🎯 自動キャリブレーション実行</button>
+        <div class="calib-actions">
+          <button class="btn btn-outline btn-small" id="calibrateBtn" disabled>🎯 測定</button>
+          <button class="btn btn-outline btn-small" id="calibClearBtn">🗑️ 解除</button>
+        </div>
+      </div>
+      <div class="learned-offset" id="learnedOffsetDisplay">
+        🧠 <strong>個人オフセット学習中...</strong> <span id="learnedOffsetValue">--</span>
       </div>
       <div style="font-size:11px; opacity:0.7; margin-top:8px;">
-        練習開始前に1回実行してください。iPad/iPhoneを固定し、静かな環境で測定します。
+        NMA補正:「聞こえた音」で叩く人間の傾向を補正します(通常30〜50ms)<br>
+        個人オフセット:最初の8拍でその子の平均ズレを学習し、以降は"揺れの少なさ"で判定します
       </div>
     </div>
 
@@ -440,7 +464,6 @@
   </div>
 </div>
 
-<!-- キャリブレーション確認モーダル(独自実装) -->
 <div class="modal-overlay" id="calibConfirmModal">
   <div class="modal">
     <div class="modal-title">🎯 自動キャリブレーション</div>
@@ -456,7 +479,6 @@
   </div>
 </div>
 
-<!-- キャリブレーション結果モーダル -->
 <div class="modal-overlay" id="calibResultModal">
   <div class="modal">
     <div class="modal-title" id="calibResultTitle">✅ 完了</div>
@@ -465,7 +487,6 @@
   </div>
 </div>
 
-<!-- テスト結果モーダル -->
 <div class="modal-overlay" id="resultModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">🎯 テスト終了!</div>
@@ -474,7 +495,7 @@
     <div id="modalRank" style="font-size:20px; font-weight:bold; margin-bottom:16px;">--</div>
     <div class="modal-detail">Perfect: <span id="modalPerfect">0</span> / Good: <span id="modalGood">0</span></div>
     <div class="modal-detail">Early: <span id="modalEarly">0</span> / Late: <span id="modalLate">0</span> / Miss: <span id="modalMiss">0</span></div>
-    <div class="modal-detail">平均ズレ: <span id="modalAvgDrift">--</span> ms</div>
+    <div class="modal-detail">平均ズレ: <span id="modalAvgDrift">--</span> ms / 学習オフセット: <span id="modalLearnedOffset">--</span> ms</div>
     <div style="margin-top:20px;">
       <button class="btn btn-primary" onclick="closeModal()">閉じる</button>
     </div>
@@ -612,8 +633,11 @@ let customPattern = {
 
 // ==================== グローバル状態 ====================
 let audioContext, analyser, mediaStream;
+let masterGain; // 🆕 音量調整用マスターゲイン
 let isPlaying = false, isCountingIn = false;
 let bpm = 100, sensitivity = 30;
+let volumeLevel = 1.0; // 🆕 音量(0.1〜1.0)
+let nmaOffset = 40; // 🆕 NMA補正値 [ms]
 let currentMode = 'practice';
 let currentPresetKey = 'eighth';
 let currentPattern = PRESETS.eighth;
@@ -624,6 +648,7 @@ let driftSum = 0, driftCount = 0;
 let lastOnsetTime = 0;
 let schedulerTimer = null;
 const TEST_BARS = 16;
+const LEARNING_HITS = 8; // 🆕 個人オフセット学習期間
 let barsCompleted = 0;
 let testCompleted = false;
 let players = [];
@@ -633,13 +658,17 @@ let systemLatency = 0;
 let isCalibrating = false;
 let calibrationSamples = [];
 let calibrationClickTimes = [];
-let calibIntervalId = null;
 let calibClickCount = 0;
 
-const $ = id => document.getElementById(id);
-const STORAGE_KEY = 'drumScoreApp_v3';
+// 🆕 個人オフセット学習
+let learnedOffset = 0; // 学習された個人平均ズレ
+let learningHitCount = 0; // 学習中のヒット数
+let learningSamples = []; // 学習期間のサンプル
+let isLearning = true; // 学習期間中フラグ
 
-// AudioContextを確実に復帰させるヘルパー
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = 'drumScoreApp_v4';
+
 async function ensureAudioContext() {
   if (!audioContext) return false;
   if (audioContext.state === 'suspended') {
@@ -661,6 +690,8 @@ function loadData() {
     currentPlayerId = data.currentPlayerId || null;
     if (data.customPattern) customPattern = data.customPattern;
     if (typeof data.systemLatency === 'number') systemLatency = data.systemLatency;
+    if (typeof data.nmaOffset === 'number') nmaOffset = data.nmaOffset;
+    if (typeof data.volumeLevel === 'number') volumeLevel = data.volumeLevel;
     if (players.length === 0) {
       players = [
         { id: genId(), name: 'はると', history: [] },
@@ -675,7 +706,7 @@ function loadData() {
 }
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
-    players, currentPlayerId, customPattern, systemLatency 
+    players, currentPlayerId, customPattern, systemLatency, nmaOffset, volumeLevel
   }));
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
@@ -739,7 +770,7 @@ $('showHistoryBtn').addEventListener('click', () => {
       div.innerHTML = `
         <div>
           <div>♩=${h.bpm} / ${h.presetName || '基本'}</div>
-          <div class="history-date">${h.date}${h.latency !== undefined ? ' / 補正:' + h.latency + 'ms' : ''}</div>
+          <div class="history-date">${h.date}${h.latency !== undefined ? ' / 補正:' + h.latency + 'ms' : ''}${h.learnedOffset !== undefined ? ' / 学習:' + h.learnedOffset + 'ms' : ''}</div>
         </div>
         <div class="history-score">${h.score}点</div>
         <div style="font-size:11px; opacity:0.7;">P:${h.perfect} G:${h.good}<br>E:${h.early} L:${h.late} M:${h.miss}</div>
@@ -871,6 +902,17 @@ $('sensitivity').addEventListener('input', e => {
   sensitivity = parseInt(e.target.value);
   $('sensVal').textContent = sensitivity;
 });
+$('volume').addEventListener('input', e => {
+  volumeLevel = parseInt(e.target.value) / 100;
+  $('volVal').textContent = parseInt(e.target.value);
+  if (masterGain) masterGain.gain.value = volumeLevel;
+  saveData();
+});
+$('nmaOffset').addEventListener('input', e => {
+  nmaOffset = parseInt(e.target.value);
+  $('nmaVal').textContent = nmaOffset;
+  saveData();
+});
 
 function renderBeatLights() {
   const container = $('metronomeVisual');
@@ -889,7 +931,13 @@ function renderBeatLights() {
 $('micBtn').addEventListener('click', async () => {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    // 即座に一度小さな音を鳴らして AudioContext をアンロック
+    
+    // 🆕 マスターゲイン(音量調整用)
+    masterGain = audioContext.createGain();
+    masterGain.gain.value = volumeLevel;
+    masterGain.connect(audioContext.destination);
+    
+    // 無音でアンロック
     const silentOsc = audioContext.createOscillator();
     const silentGain = audioContext.createGain();
     silentGain.gain.value = 0.001;
@@ -933,7 +981,7 @@ $('micBtn').addEventListener('click', async () => {
   }
 });
 
-// ==================== キャリブレーション(独自モーダル + 逐次スケジュール) ====================
+// ==================== キャリブレーション ====================
 function updateLatencyDisplay() {
   const disp = $('latencyDisplay');
   if (systemLatency === 0) {
@@ -945,27 +993,32 @@ function updateLatencyDisplay() {
   }
 }
 
-// キャリブレーションボタン → モーダルを開く
 $('calibrateBtn').addEventListener('click', () => {
   if (isPlaying || isCountingIn) return alert('練習を停止してから実行してください');
   $('calibConfirmModal').classList.add('active');
+});
+
+// 🆕 キャリブレーション解除
+$('calibClearBtn').addEventListener('click', () => {
+  if (systemLatency === 0) return alert('キャリブレーション値はすでに0(未設定)です');
+  if (!confirm('キャリブレーション値を解除して0にしますか?')) return;
+  systemLatency = 0;
+  saveData();
+  updateLatencyDisplay();
+  alert('✅ キャリブレーション値を解除しました');
 });
 
 $('calibConfirmNo').addEventListener('click', () => {
   $('calibConfirmModal').classList.remove('active');
 });
 
-// 「開始する」を押したときの処理
 $('calibConfirmYes').addEventListener('click', async () => {
   $('calibConfirmModal').classList.remove('active');
-  
-  // AudioContextを確実に再開
   const ok = await ensureAudioContext();
   if (!ok) {
     alert('❌ 音声の再開に失敗しました。ページを再読み込みしてください。');
     return;
   }
-  
   isCalibrating = true;
   calibrationSamples = [];
   calibrationClickTimes = [];
@@ -975,45 +1028,37 @@ $('calibConfirmYes').addEventListener('click', async () => {
   $('micBtn').disabled = true;
   $('status').textContent = '🎯 キャリブレーション中... 静かに!';
   $('status').className = 'status calibrating';
-  
   const NUM_CLICKS = 10;
   const CLICK_INTERVAL_MS = 800;
-  
-  // 最初のクリックを800ms後に鳴らす
   setTimeout(() => playNextCalibClick(NUM_CLICKS, CLICK_INTERVAL_MS), 800);
 });
 
 function playNextCalibClick(total, intervalMs) {
   if (calibClickCount >= total) {
-    // 全部鳴らし終わったら1秒待って結果集計
     setTimeout(() => finalizeCalibration(), 1000);
     return;
   }
-  
-  // 直近のタイミング(50ms先)で音をスケジュール
   const t = audioContext.currentTime + 0.05;
   calibrationClickTimes.push(t);
   scheduleCalibrationClick(t);
   calibClickCount++;
   $('status').textContent = `🎯 測定中... (${calibClickCount}/${total})`;
-  
-  // 次のクリックを予約
   setTimeout(() => playNextCalibClick(total, intervalMs), intervalMs);
 }
 
+// 🆕 音量最大化(マスターゲイン経由)
 function scheduleCalibrationClick(time) {
-  // 2つの周波数を重ねて確実に聞こえるようにする
   const osc1 = audioContext.createOscillator();
   const osc2 = audioContext.createOscillator();
   const gain = audioContext.createGain();
   osc1.frequency.value = 1000;
   osc2.frequency.value = 1500;
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.9, time + 0.002);
+  gain.gain.linearRampToValueAtTime(1.0, time + 0.002); // 最大音量
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
   osc1.connect(gain);
   osc2.connect(gain);
-  gain.connect(audioContext.destination);
+  gain.connect(masterGain);
   osc1.start(time); osc1.stop(time + 0.12);
   osc2.start(time); osc2.stop(time + 0.12);
 }
@@ -1038,36 +1083,30 @@ function finalizeCalibration() {
   $('startBtn').disabled = false;
   $('status').textContent = '';
   $('status').className = 'status ready';
-  
   if (calibrationSamples.length < 3) {
     $('status').textContent = '❌ 測定失敗(サンプル不足)';
     showCalibResult(
       '❌ 測定失敗',
-      `測定サンプルが少なすぎます(${calibrationSamples.length}個/10個中)\n\n対策:\n・マイク感度を上げる(現在: ${sensitivity})\n・端末の音量を上げる\n・静かな環境で実行する\n・端末をスネアの近くに置く`
+      `測定サンプルが少なすぎます(${calibrationSamples.length}個/10個中)\n\n対策:\n・マイク感度を上げる(現在: ${sensitivity})\n・音量スライダーを上げる\n・端末本体の音量を上げる\n・静かな環境で実行する\n・端末をスネアの近くに置く`
     );
     return;
   }
-  
   const sorted = [...calibrationSamples].sort((a, b) => a - b);
   const median = sorted[Math.floor(sorted.length / 2)];
   const min = sorted[0];
   const max = sorted[sorted.length - 1];
   const avg = sorted.reduce((a,b) => a+b, 0) / sorted.length;
   const stdDev = Math.sqrt(sorted.reduce((sum,v) => sum + (v-avg)*(v-avg), 0) / sorted.length);
-  
   systemLatency = median;
   saveData();
   updateLatencyDisplay();
-  
   $('status').textContent = `✅ キャリブレーション完了`;
   $('status').className = 'status ready';
-  
   let quality = '';
   if (stdDev < 10) quality = '✨ 非常に安定した測定';
   else if (stdDev < 20) quality = '👍 良好な測定';
   else if (stdDev < 40) quality = '😊 まあまあの測定';
-  else quality = '⚠️ 測定にばらつき有り(環境ノイズが多い可能性)';
-  
+  else quality = '⚠️ 測定にばらつき有り';
   showCalibResult(
     '✅ キャリブレーション完了',
     `📊 測定結果:\n・有効サンプル: ${calibrationSamples.length}/10\n・中央値: ${median.toFixed(1)} ms(採用)\n・平均値: ${avg.toFixed(1)} ms\n・最小/最大: ${min.toFixed(1)} / ${max.toFixed(1)} ms\n・標準偏差: ${stdDev.toFixed(1)} ms\n\n${quality}\n\n以降、この値でスコアを自動補正します。`
@@ -1089,19 +1128,20 @@ $('startBtn').addEventListener('click', async () => {
   if (currentMode === 'test' && !currentPlayerId) {
     return alert('テストモードではプレイヤーを選択してください');
   }
-  if (systemLatency === 0) {
-    if (!confirm('⚠️ まだキャリブレーションが実行されていません\n\n補正なしで進めますか?\n(先にキャリブレーションを推奨します)')) return;
-  }
-  
-  // AudioContextを確実に再開
   await ensureAudioContext();
-  
   currentPatternIndex = 0;
   barsCompleted = 0;
   expectedHits = [];
   stats = { perfect: 0, good: 0, early: 0, late: 0, miss: 0 };
   driftSum = 0; driftCount = 0;
   testCompleted = false;
+  // 🆕 個人オフセット学習リセット
+  learnedOffset = 0;
+  learningHitCount = 0;
+  learningSamples = [];
+  isLearning = true;
+  $('learnedOffsetDisplay').classList.add('active');
+  $('learnedOffsetValue').textContent = '学習中...';
   updateStats();
   $('timingGraph').innerHTML = '<div class="timing-center"></div>';
   $('score').textContent = '--';
@@ -1139,8 +1179,8 @@ function startCountIn() {
     isCountingIn = false;
     isPlaying = true;
     nextBeatTime = mainStart;
-    $('status').textContent = currentMode === 'test' ? '🎯 テスト中...' : '🔴 練習中...';
-    $('status').className = 'status recording';
+    $('status').textContent = currentMode === 'test' ? '🎯 テスト中(最初の8拍は学習期間)...' : '🔴 練習中(最初の8拍は学習期間)...';
+    $('status').className = 'status learning';
     $('stopBtn').disabled = false;
     scheduler();
   }, (mainStart - audioContext.currentTime) * 1000);
@@ -1171,23 +1211,19 @@ function scheduler() {
   const secondsPerBeat = 60.0 / bpm;
   const subInterval = secondsPerBeat / currentPattern.subdivision;
   const patternLen = currentPattern.pattern.length;
-  
   while (nextBeatTime < audioContext.currentTime + 0.1) {
     if (currentMode === 'test' && barsCompleted >= TEST_BARS) {
       setTimeout(() => stopPlayback(true), 300);
       return;
     }
-    
     const step = currentPattern.pattern[currentPatternIndex];
     const posInPattern = currentPatternIndex;
     const beatInBar = Math.floor(posInPattern / currentPattern.subdivision) % currentPattern.beatsPerBar;
     const isDownbeat = posInPattern === 0;
     const isMainBeat = posInPattern % currentPattern.subdivision === 0;
-    
     if (isMainBeat) {
       scheduleClick(nextBeatTime, isDownbeat ? 'downbeat' : 'main');
     }
-    
     if (step.hand !== null) {
       expectedHits.push({
         time: nextBeatTime,
@@ -1197,14 +1233,12 @@ function scheduler() {
         accent: !!step.accent
       });
     }
-    
     const localIdx = currentPatternIndex;
     const flashTime = (nextBeatTime - audioContext.currentTime) * 1000;
     setTimeout(() => {
       highlightPatternCell(localIdx);
       if (isMainBeat) flashBeat(beatInBar);
     }, flashTime);
-    
     currentPatternIndex++;
     if (currentPatternIndex >= patternLen) {
       currentPatternIndex = 0;
@@ -1220,15 +1254,17 @@ function scheduler() {
   schedulerTimer = setTimeout(scheduler, 25);
 }
 
+// 🆕 音量最大化(マスターゲイン経由)
 function scheduleClick(time, type) {
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
   osc.frequency.value = type === 'downbeat' ? 1200 : (type === 'main' ? 800 : 500);
+  const peakVol = type === 'sub' ? 0.5 : 1.0; // 最大音量
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(type === 'sub' ? 0.2 : 0.4, time + 0.001);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-  osc.connect(gain).connect(audioContext.destination);
-  osc.start(time); osc.stop(time + 0.05);
+  gain.gain.linearRampToValueAtTime(peakVol, time + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  osc.connect(gain).connect(masterGain);
+  osc.start(time); osc.stop(time + 0.08);
 }
 
 function flashBeat(index) {
@@ -1238,6 +1274,7 @@ function flashBeat(index) {
   setTimeout(() => el.classList.remove('active'), 100);
 }
 
+// 🆕 個人オフセット学習込みの判定
 function processHit(hitTime) {
   let closest = null, minDiff = Infinity;
   for (const eh of expectedHits) {
@@ -1250,7 +1287,32 @@ function processHit(hitTime) {
     return;
   }
   closest.matched = true;
-  const drift = (hitTime - closest.time) * 1000 - systemLatency;
+  
+  // 生ズレ(NMA補正+機械キャリブレーション補正込み)
+  const rawDrift = (hitTime - closest.time) * 1000 - systemLatency + nmaOffset;
+  
+  // 🆕 学習期間中は個人オフセットを蓄積
+  if (isLearning) {
+    learningSamples.push(rawDrift);
+    learningHitCount++;
+    $('learnedOffsetValue').textContent = `学習中 ${learningHitCount}/${LEARNING_HITS}`;
+    if (learningHitCount >= LEARNING_HITS) {
+      // 学習完了
+      const sorted = [...learningSamples].sort((a,b) => a-b);
+      learnedOffset = sorted[Math.floor(sorted.length / 2)]; // 中央値
+      isLearning = false;
+      $('learnedOffsetValue').textContent = `完了 → ${learnedOffset.toFixed(1)} ms`;
+      $('status').textContent = currentMode === 'test' ? '🎯 テスト中(採点開始)...' : '🔴 練習中(採点開始)...';
+      $('status').className = 'status recording';
+      showFeedback('✅ 学習完了', '#00bcd4');
+    } else {
+      showFeedback(`📚 学習中 ${learningHitCount}/${LEARNING_HITS}`, '#00bcd4');
+    }
+    return;
+  }
+  
+  // 学習後は「個人オフセットからの揺れ」で判定
+  const drift = rawDrift - learnedOffset;
   driftSum += drift; driftCount++;
   addTimingMark(drift);
   const absDrift = Math.abs(drift);
@@ -1269,15 +1331,20 @@ function checkMissedHits() {
   for (const eh of expectedHits) {
     if (!eh.matched && (now - eh.time) > 0.15 + systemLatency/1000) {
       eh.matched = 'missed';
-      stats.miss++;
-      updateStats();
+      if (!isLearning) { // 学習中はミスをカウントしない
+        stats.miss++;
+        updateStats();
+      }
     }
   }
 }
 
 function finalizePendingHits() {
   for (const eh of expectedHits) {
-    if (!eh.matched) { eh.matched = 'missed'; stats.miss++; }
+    if (!eh.matched) { 
+      eh.matched = 'missed'; 
+      if (!isLearning) stats.miss++;
+    }
   }
   updateStats();
 }
@@ -1346,7 +1413,8 @@ function showTestResult() {
     perfect: stats.perfect, good: stats.good,
     early: stats.early, late: stats.late, miss: stats.miss,
     avgDrift: driftCount > 0 ? (driftSum/driftCount).toFixed(1) : '--',
-    latency: systemLatency.toFixed(1)
+    latency: systemLatency.toFixed(1),
+    learnedOffset: learnedOffset.toFixed(1)
   };
   player.history.push(record);
   if (player.history.length > 50) player.history.shift();
@@ -1367,6 +1435,7 @@ function showTestResult() {
   $('modalLate').textContent = stats.late;
   $('modalMiss').textContent = stats.miss;
   $('modalAvgDrift').textContent = record.avgDrift;
+  $('modalLearnedOffset').textContent = record.learnedOffset;
   $('resultModal').classList.add('active');
 }
 
@@ -1374,10 +1443,16 @@ function closeModal() {
   $('resultModal').classList.remove('active');
 }
 
+// ==================== 初期化 ====================
 loadData();
 renderPresetInfo();
 renderBeatLights();
 updateLatencyDisplay();
+// 保存値を UI に反映
+$('nmaOffset').value = nmaOffset;
+$('nmaVal').textContent = nmaOffset;
+$('volume').value = volumeLevel * 100;
+$('volVal').textContent = Math.round(volumeLevel * 100);
 </script>
 </body>
 </html>
