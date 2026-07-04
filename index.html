@@ -381,12 +381,12 @@
         <input type="range" id="sensitivity" min="5" max="80" value="30" step="1">
       </div>
       <div class="control-item">
-        <label>🔊 音量: <span class="sensitivity-value" id="volVal">100</span>%</label>
-        <input type="range" id="volume" min="10" max="100" value="100" step="5">
+        <label>🔊 音量: <span class="sensitivity-value" id="volVal">200</span>%</label>
+        <input type="range" id="volume" min="10" max="300" value="200" step="10">
       </div>
       <div class="control-item">
-        <label>🧠 NMA補正(全員共通): <span class="sensitivity-value" id="nmaVal">40</span> ms</label>
-        <input type="range" id="nmaOffset" min="0" max="80" value="40" step="5">
+        <label>🧠 NMA補正(全員共通): <span class="sensitivity-value" id="nmaVal">-30</span> ms</label>
+        <input type="range" id="nmaOffset" min="-100" max="30" value="-30" step="5">
       </div>
     </div>
     <div class="bpm-display" id="bpmDisplay">♩ = 100</div>
@@ -412,7 +412,7 @@
       </div>
       <div style="font-size:11px; opacity:0.7; margin-top:8px;">
         キャリブレーション:端末・環境の音の遅延を測定して補正します<br>
-        NMA補正:「音を聞いて叩く」人間共通の傾向を補正します(全員共通の基準)
+        NMA補正:マイナスにすると"早めに叩く"よう促す指標に(全員共通の基準)
       </div>
     </div>
 
@@ -492,7 +492,6 @@
 </div>
 
 <script>
-// ==================== リズムプリセット定義 ====================
 const PRESETS = {
   quarter: {
     name: '基本の四分', desc: '1拍ごとに叩く基本リズム',
@@ -620,13 +619,12 @@ let customPattern = {
   pattern: Array.from({length:16}, (_,i)=>({hand: i%2===0 ? 'R':'L'}))
 };
 
-// ==================== グローバル状態 ====================
 let audioContext, analyser, mediaStream;
 let masterGain;
 let isPlaying = false, isCountingIn = false;
 let bpm = 100, sensitivity = 30;
-let volumeLevel = 1.0;
-let nmaOffset = 40; // 全員共通のNMA補正
+let volumeLevel = 2.0; // 初期音量200%
+let nmaOffset = -30; // 初期NMA補正-30ms(遅い傾向を許容せず、早めに促す)
 let currentMode = 'practice';
 let currentPresetKey = 'eighth';
 let currentPattern = PRESETS.eighth;
@@ -649,7 +647,7 @@ let calibrationClickTimes = [];
 let calibClickCount = 0;
 
 const $ = id => document.getElementById(id);
-const STORAGE_KEY = 'drumScoreApp_v5';
+const STORAGE_KEY = 'drumScoreApp_v6';
 
 async function ensureAudioContext() {
   if (!audioContext) return false;
@@ -664,7 +662,6 @@ async function ensureAudioContext() {
   return audioContext.state === 'running';
 }
 
-// ==================== ストレージ ====================
 function loadData() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -693,7 +690,6 @@ function saveData() {
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
 
-// ==================== プレイヤーUI ====================
 function renderPlayers() {
   const list = $('playerList');
   list.innerHTML = '';
@@ -763,7 +759,6 @@ $('showHistoryBtn').addEventListener('click', () => {
   card.style.display = card.style.display === 'none' ? 'block' : 'none';
 });
 
-// ==================== プリセット選択 ====================
 $('presetSelect').addEventListener('change', e => {
   const key = e.target.value;
   currentPresetKey = key;
@@ -806,7 +801,6 @@ function highlightPatternCell(index) {
   if (cell) cell.classList.add('current');
 }
 
-// ==================== カスタムエディタ ====================
 function renderCustomEditor() {
   $('customLength').value = customPattern.pattern.length;
   const grid = $('customGrid');
@@ -864,7 +858,6 @@ $('customSave').addEventListener('click', () => {
   alert('カスタムパターンを適用しました');
 });
 
-// ==================== モード ====================
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (isPlaying || isCountingIn) return;
@@ -909,7 +902,6 @@ function renderBeatLights() {
   }
 }
 
-// ==================== マイク ====================
 $('micBtn').addEventListener('click', async () => {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -958,7 +950,6 @@ $('micBtn').addEventListener('click', async () => {
   }
 });
 
-// ==================== キャリブレーション ====================
 function updateLatencyDisplay() {
   const disp = $('latencyDisplay');
   if (systemLatency === 0) {
@@ -1098,7 +1089,6 @@ function closeCalibResultModal() {
   $('calibResultModal').classList.remove('active');
 }
 
-// ==================== スタート ====================
 $('startBtn').addEventListener('click', async () => {
   if (currentMode === 'test' && !currentPlayerId) {
     return alert('テストモードではプレイヤーを選択してください');
@@ -1241,7 +1231,6 @@ function flashBeat(index) {
   setTimeout(() => el.classList.remove('active'), 100);
 }
 
-// 🎯 全員共通の絶対時刻基準の判定
 function processHit(hitTime) {
   let closest = null, minDiff = Infinity;
   for (const eh of expectedHits) {
@@ -1254,7 +1243,6 @@ function processHit(hitTime) {
     return;
   }
   closest.matched = true;
-  // 全員共通の基準:機械補正 + NMA補正のみ(個人差は補正しない)
   const drift = (hitTime - closest.time) * 1000 - systemLatency + nmaOffset;
   driftSum += drift; driftCount++;
   addTimingMark(drift);
@@ -1386,7 +1374,7 @@ renderBeatLights();
 updateLatencyDisplay();
 $('nmaOffset').value = nmaOffset;
 $('nmaVal').textContent = nmaOffset;
-$('volume').value = volumeLevel * 100;
+$('volume').value = Math.round(volumeLevel * 100);
 $('volVal').textContent = Math.round(volumeLevel * 100);
 </script>
 </body>
